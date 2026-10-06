@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#eef0f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1216" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font: 14px/1.45 system-ui, -apple-system, sans-serif; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>Моя полка настолок</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tektur:wght@500;700&family=Commissioner:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: одна колонка карточек-«коробок» под ширину iPhone (402pt), липкая панель фильтров сверху */
+:root {
+  --bg: #eef0f3;
+  --surface: #ffffff;
+  --surface-2: #e3e7ec;
+  --fg: #171b22;
+  --muted: #5b6573;
+  --line: #d5dbe2;
+  --accent: #2f5bd3;
+  --accent-ink: #ffffff;
+  --good: #1f8a52;
+  --ok: #b07a12;
+  --transit: #b8620b;
+  --transit-soft: #fbefe0;
+  --shadow: 0 1px 2px rgba(20,30,50,.06), 0 6px 18px rgba(20,30,50,.06);
+  --f-display: "Tektur", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "Commissioner", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1216; --surface: #181c22; --surface-2: #232931; --fg: #e9edf2;
+    --muted: #96a1af; --line: #2b323b; --accent: #7fa2ff; --accent-ink: #0f1216;
+    --good: #4cc98a; --ok: #e3b04b; --transit: #f2a748; --transit-soft: #2c2214; --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1216; --surface: #181c22; --surface-2: #232931; --fg: #e9edf2;
+  --muted: #96a1af; --line: #2b323b; --accent: #7fa2ff; --accent-ink: #0f1216;
+  --good: #4cc98a; --ok: #e3b04b; --transit: #f2a748; --transit-soft: #2c2214; --shadow: none; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--f-body); font-size: 15px; line-height: 1.45;
+  -webkit-tap-highlight-color: transparent;
+}
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+.wrap { overflow-x: clip; max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: 0 32px; }
+
+header.top { padding-block: 20px 8px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 28px; line-height: 1.05; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+.count { font-family: var(--f-data); font-size: 12px; line-height: 1.4; text-align: right; color: var(--muted); white-space: nowrap; padding-bottom: 4px; }
+
+/* Липкая панель фильтров */
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  margin-inline: -16px; padding-inline: 16px; padding-block: 10px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+  display: grid; gap: 10px;
+}
+.searchrow { display: flex; gap: 8px; align-items: stretch; }
+.search { position: relative; flex: 1; min-width: 0; }
+.ftoggle { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; min-height: 42px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 600 14px/1 var(--f-body); cursor: pointer; }
+.ftoggle svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+.ftoggle[aria-expanded="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.ftoggle b { font: 700 11px/1 var(--f-data); background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 3px 6px; }
+.filters { display: grid; gap: 10px; }
+.filters[hidden] { display: none; }
+.search input {
+  width: 100%; font: inherit; font-size: 16px; /* 16px — iOS не зумит поле */
+  padding: 10px 12px 10px 36px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+}
+.search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; stroke: var(--muted); }
+.players { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.seg { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; min-width: 0; }
+.chip.transit[aria-pressed="true"] { background-color: var(--transit); border-color: var(--transit); color: #fff; }
+.sortseg { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-width: 0; }
+.sortseg .chip { padding-inline: 4px; white-space: nowrap; }
+.sortseg .chip:first-child { border-radius: 10px 0 0 10px; }
+.sortseg .chip:last-child { border-radius: 0 10px 10px 0; border-left: 0; }
+.chip.sel.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.fld { display: grid; gap: 3px; min-width: 0; }
+.fld > span { font: 600 10px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-left: 2px; }
+.selects { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.15fr); gap: 6px; }
+.chip {
+  font: 500 13px/1 var(--f-body); color: var(--fg);
+  padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line);
+  background-color: var(--surface); cursor: pointer; min-height: 38px; min-width: 0; width: 100%;
+}
+.chip[aria-pressed="true"] { background-color: var(--fg); color: var(--bg); border-color: var(--fg); }
+.chip.sel { padding-left: 8px; padding-right: 20px; appearance: none; -webkit-appearance: none; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
+  font-size: 16px; /* iOS не зумит поле */
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(-45deg, transparent 50%, var(--muted) 50%);
+  background-position: calc(100% - 12px) 16px, calc(100% - 7px) 16px; background-size: 5px 5px; background-repeat: no-repeat; }
+.lbl { flex: none; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Список */
+.list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 14px; }
+.list > *, .expbox > * { min-width: 0; max-width: 100%; }
+.card.nested { margin-left: 22px; margin-top: -4px; position: relative; overflow: visible; }
+.card.nested::before { content: ""; position: absolute; left: -13px; top: -12px; width: 9px; height: 40px;
+  border-left: 2px solid var(--line); border-bottom: 2px solid var(--line); border-bottom-left-radius: 8px; }
+.card.nested .head { grid-template-columns: 72px minmax(0, 1fr); }
+.card.nested .cover { width: 72px; }
+.card.nested .ph { font-size: 18px; }
+.card.nested > .head, .card.nested > .body { border-radius: var(--r); }
+.card { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); border: 1px solid var(--line); overflow: hidden; }
+.head { min-width: 0; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 14px; padding: 12px; width: 100%; text-align: left;
+  background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
+.cover { position: relative; width: 92px; aspect-ratio: 1; max-width: 100%; border-radius: 8px; overflow: hidden; background: var(--surface-2); }
+.cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cover .art { position: absolute; inset: 0; }
+.cover .art svg { width: 100%; height: 100%; display: block; }
+.cover .art .plus { position: absolute; right: 5px; bottom: 5px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; display: grid; place-items: center; font: 700 16px/1 var(--f-body); }
+.cover img.repo-cover { position: absolute; inset: 0; }
+.ph { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 6px;
+  font-family: var(--f-display); font-weight: 700; font-size: 22px; letter-spacing: .04em; color: #fff; }
+.ph small { display: block; font: 500 8.5px/1.2 var(--f-body); letter-spacing: .12em; text-transform: uppercase; opacity: .8; margin-top: 4px; }
+.info { min-width: 0; display: grid; align-content: start; gap: 6px; }
+.titlerow > div:first-child { min-width: 0; flex: 1; }
+.titlerow { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; }
+.name { overflow-wrap: anywhere; font-family: var(--f-display); font-weight: 700; font-size: 18px; line-height: 1.15; margin: 0; text-wrap: balance; }
+.orig { overflow-wrap: anywhere; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.rating { flex: none; display: grid; justify-items: center; gap: 2px; }
+.rating b { font: 700 15px/1 var(--f-data); color: var(--accent-ink); background: var(--good);
+  padding: 6px 7px; border-radius: 8px; font-variant-numeric: tabular-nums; min-width: 42px; text-align: center; }
+.rating span { font: 500 9.5px/1 var(--f-data); color: var(--muted); letter-spacing: .08em; }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meta i { font-style: normal; display: inline-flex; gap: 4px; align-items: center; }
+.meta svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+.weight { display: inline-flex; gap: 2px; align-items: center; }
+.weight u { width: 6px; height: 10px; border-radius: 2px; background: var(--line); text-decoration: none; }
+.weight u.on { background: var(--ok); }
+.more { display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--accent); }
+.more svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.4; transition: transform .2s; }
+.card.open .more svg { transform: rotate(180deg); }
+
+.body { padding: 0 14px 14px; display: grid; gap: 12px; }
+.body p { margin: 0; max-width: 65ch; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 11.5px; padding: 4px 8px; border-radius: 6px; background: var(--surface-2); color: var(--fg); }
+dl.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 13px; }
+dl.facts dt { color: var(--muted); }
+dl.facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: 600 13px/1 var(--f-body); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface-2); color: var(--fg); text-decoration: none; cursor: pointer; min-height: 38px; display: inline-flex; align-items: center; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.badge { display: inline-block; font: 600 10px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase;
+  padding: 4px 6px; border-radius: 5px; background: var(--accent); color: var(--accent-ink); margin-bottom: 4px; }
+.expof { color: var(--accent); background: none; border: 0; padding: 0; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.ph .plus { position: absolute; right: 5px; bottom: 5px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,.45);
+  display: grid; place-items: center; font: 700 16px/1 var(--f-body); }
+.card.flash { outline: 2px solid var(--accent); outline-offset: 2px; }
+.section-h { display: flex; align-items: baseline; gap: 8px; margin: 10px 2px -2px; font: 700 13px/1 var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.section-h b { font: 500 12px/1 var(--f-data); color: var(--muted); }
+.section-h.away { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.section-h.transit { color: var(--transit); margin-top: 22px; padding-top: 16px; border-top: 1.5px dashed var(--transit); }
+.section-h svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; align-self: center; }
+/* Пунктир рисуем фоном псевдоэлемента: dashed-рамка в Safari на высоких блоках рвётся */
+.card.coming { position: relative; border: 0; background: var(--transit-soft); box-shadow: none; }
+.card.coming::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3;
+  --d: var(--transit);
+  background:
+    linear-gradient(90deg, var(--d) 60%, transparent 0) top left / 10px 2px repeat-x,
+    linear-gradient(90deg, var(--d) 60%, transparent 0) bottom left / 10px 2px repeat-x,
+    linear-gradient(180deg, var(--d) 60%, transparent 0) top left / 2px 10px repeat-y,
+    linear-gradient(180deg, var(--d) 60%, transparent 0) top right / 2px 10px repeat-y; }
+.card.coming.nested::before { border-color: var(--transit); opacity: .6; }
+.card.coming .cover::after { content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(-45deg, transparent 0 9px, rgba(255,255,255,.14) 9px 18px); pointer-events: none; }
+.ribbon { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; background: var(--transit); color: #fff;
+  font: 700 9px/1 var(--f-body); letter-spacing: .14em; text-transform: uppercase; text-align: center; padding: 5px 0; }
+.badge.loc { background: var(--surface-2); color: var(--fg); border: 1px solid var(--line); }
+.badge.transit { background: var(--transit); color: #fff; }
+.rating b.none { background: var(--surface-2); color: var(--muted); }
+.exptoggle { box-sizing: border-box; max-width: calc(100% - 22px); overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: calc(100% - 22px);
+  margin: -8px 0 0 22px; padding: 9px 12px; min-height: 40px; border: 1px solid var(--line); border-top: 0;
+  border-radius: 0 0 12px 12px; background: var(--surface-2); color: var(--fg); font: 600 13px/1.2 var(--f-body); cursor: pointer; text-align: left; position: relative; }
+.exptoggle::before { content: ""; position: absolute; left: -13px; top: -4px; width: 9px; height: 24px;
+  border-left: 2px solid var(--line); border-bottom: 2px solid var(--line); border-bottom-left-radius: 8px; }
+.exptoggle .et-l { display: inline-flex; align-items: center; gap: 6px; flex: none; color: var(--accent); }
+.exptoggle svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.4; transition: transform .2s; }
+.exptoggle.open svg { transform: rotate(90deg); }
+.exptoggle .et-r { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; font-size: 12px; color: var(--muted); }
+.exptoggle.coming { border-color: var(--transit); border-style: dashed; background: var(--transit-soft); }
+.exptoggle.coming .et-l { color: var(--transit); }
+.exptoggle.coming::before { border-color: var(--transit); opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .exptoggle svg { transition: none; } }
+.tr { display: grid; justify-items: end; gap: 8px; }
+.viewseg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.vbtn { width: 40px; height: 34px; display: grid; place-items: center; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.vbtn + .vbtn { border-left: 1px solid var(--line); }
+.vbtn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.vbtn[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+
+/* Плитки в две колонки */
+.list.grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.list.grid > .section-h, .list.grid > .empty, .list.grid > .exptoggle, .list.grid > .card.open { grid-column: 1 / -1; }
+.list.grid > .card:not(.open) { border-radius: 10px; }
+.list.grid > .card:not(.open) .head { grid-template-columns: 1fr; gap: 5px; padding: 5px; height: 100%; align-content: start; }
+.list.grid > .card:not(.open) .cover { width: 100%; border-radius: 6px; }
+.list.grid > .card:not(.open) .ph { font-size: 24px; }
+.list.grid > .card:not(.open) .ph small { display: none; }
+.list.grid > .card:not(.open) .ribbon { font-size: 7.5px; padding: 3px 0; letter-spacing: .1em; }
+.list.grid > .card:not(.open) .info { gap: 2px; padding: 0 2px 2px; }
+.list.grid > .card:not(.open) .name { font-size: 12.5px; line-height: 1.2; text-wrap: pretty;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.list.grid > .card:not(.open) .expcount, .list.grid > .card:not(.open) .orig, .list.grid > .card:not(.open) .more,
+.list.grid > .card:not(.open) .weight, .list.grid > .card:not(.open) .meta i:nth-child(n+3) { display: none; }
+.list.grid > .card:not(.open) .titlerow { display: block; }
+.list.grid > .card:not(.open) .rating { position: absolute; top: 9px; right: 9px; z-index: 2; }
+.list.grid > .card:not(.open) .rating span { display: none; }
+.list.grid > .card:not(.open) .rating b { font-size: 11px; padding: 3px 4px; min-width: 0; border-radius: 5px; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.list.grid > .card:not(.open) .badge { font-size: 8px; padding: 2px 4px; margin-bottom: 2px; letter-spacing: .04em; }
+.list.grid > .card:not(.open) .meta { font-size: 10.5px; gap: 0 6px; flex-wrap: nowrap; overflow: hidden; }
+.list.grid > .card:not(.open) .meta svg { width: 11px; height: 11px; }
+.list.grid > .card.coming:not(.open) .badge.transit { display: none; }
+.meta i { white-space: nowrap; }
+.list.grid > .card:not(.open) .meta { gap: 0 5px; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.list.grid > .card:not(.open) .meta i { gap: 2px; flex: none; }
+.list.grid > .card:not(.open) .meta .u { display: none; }
+.list.grid > .card:not(.open) .meta i:nth-child(2)::after { content: "′"; }
+.list.grid > .card { position: relative; }
+.list.grid .card.nested { margin: 0; }
+.list.grid .card.nested::before, .list.grid .exptoggle::before { display: none; }
+.list.grid .exptoggle { width: 100%; margin: -4px 0 0; border-top: 1px solid var(--line); border-radius: 12px; }
+.list.grid .exptoggle.coming { border-top-style: dashed; border-color: var(--transit); }
+.expbox { display: grid; gap: 8px; padding-top: 4px; border-top: 1px solid var(--line); }
+.expbox-h { font: 700 11px/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-top: 10px; }
+.expbox .card.nested { margin: 0; box-shadow: none; background: var(--bg); }
+.expbox .card.nested.coming { background: var(--transit-soft); }
+.expbox .card.nested::before { display: none; }
+.empty { text-align: center; color: var(--muted); padding: 40px 12px; }
+.note { font-size: 12px; color: var(--muted); margin-top: 18px; }
+@media (prefers-reduced-motion: reduce) { .more svg { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Моя полка<br>настолок</h1>
+    <div class="tr">
+      <div class="count" id="count"></div>
+      <div class="viewseg" role="group" aria-label="Вид">
+        <button class="vbtn" data-view="list" aria-pressed="true" aria-label="Списком"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="5" rx="1"/><rect x="3" y="15" width="5" height="5" rx="1"/><path d="M11 6.5h10M11 17.5h10"/></svg></button>
+        <button class="vbtn" data-view="grid" aria-pressed="false" aria-label="Плитками"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="bar">
+    <div class="searchrow">
+      <label class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Поиск по названию или тегу" aria-label="Поиск" autocomplete="off">
+      </label>
+      <button class="ftoggle" id="ftoggle" aria-expanded="false" aria-controls="filters">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        <span>Фильтры</span><b id="fcount" hidden></b>
+      </button>
+    </div>
+    <div class="filters" id="filters" hidden>
+    <div class="players" role="group" aria-label="Число игроков">
+      <span class="lbl">Игроки</span>
+      <div class="seg">
+        <button class="chip" data-players="1" aria-pressed="false">1</button>
+        <button class="chip" data-players="2" aria-pressed="false">2</button>
+        <button class="chip" data-players="3" aria-pressed="false">3</button>
+        <button class="chip" data-players="4" aria-pressed="false">4</button>
+        <button class="chip" data-players="5" aria-pressed="false">5+</button>
+      </div>
+    </div>
+    <div class="selects">
+      <label class="fld"><span>Жанр</span><select class="chip sel" id="genre">
+        <option value="">Любой</option>
+        <option value="duel">Дуэль</option>
+        <option value="battle">Битва</option>
+        <option value="euro">Евро</option>
+        <option value="coop">Кооператив</option>
+        <option value="solo">Соло</option>
+        <option value="party">Для компании</option>
+      </select></label>
+      <label class="fld"><span>Наличие</span><select class="chip sel" id="avail">
+        <option value="">Все</option>
+        <option value="shelf">На полке</option>
+        <option value="coming">В пути</option>
+      </select></label>
+      <label class="fld"><span>Локация</span><select class="chip sel" id="loc">
+        <option value="">Везде</option>
+        <option value="me">У меня</option>
+        <option value="away">Вне дома</option>
+      </select></label>
+    </div>
+    <div class="selects">
+      <label class="fld"><span>Время</span><select class="chip sel" id="time">
+        <option value="">Любое</option>
+        <option value="90">до 1,5 ч</option>
+        <option value="120">до 2 ч</option>
+        <option value="999">от 2 ч</option>
+      </select></label>
+      <label class="fld"><span>Сложность</span><select class="chip sel" id="weight">
+        <option value="">Любая</option>
+        <option value="mid">до 3,5</option>
+        <option value="heavy">3,5 и выше</option>
+      </select></label>
+      <div class="fld"><span>Сортировка</span><div class="sortseg" role="group" aria-label="Сортировка">
+        <button class="chip" data-sort="rating" aria-pressed="true" title="По рейтингу BGG">Рейтинг</button>
+        <button class="chip" data-sort="name" aria-pressed="false" title="По названию">А–Я</button>
+      </div></div>
+    </div>
+    </div>
+  </div>
+
+  <div class="list" id="list"></div>
+  <p class="note">Рейтинг — средняя оценка игроков на BoardGameGeek (если игры там нет, подписан другой источник), сложность (weight) — по шкале BGG от 1 до 5. Данные на октябрь 2026.</p>
+</div>
+
+<script>
+// Дополнение — такая же запись с полем base: "<id базовой игры>"
+const GAMES = [
+  {
+    id: "forbidden-stars", name: "Forbidden Stars", orig: "Запретные звёзды", year: 2015,
+    bgg: 8.0, rank: 157, weight: 3.84, pmin: 2, pmax: 4, tmin: 120, tmax: 180, age: 14,
+    bggId: 175155, initials: "FS", hue: ["#3a1450", "#a12a2a"],
+    tags: ["Warhammer 40 000", "Контроль территорий", "Приказы", "Битвы", "Асимметрия"],
+    desc: "Четыре фракции вселенной Warhammer 40 000 (Ультрамарины, эльдары, орки и Пожиратели Миров) делят скопление Геракон после того, как варп-шторма утихли. Каждый раунд игроки тайно выкладывают приказы стопкой на систему, и порядок их розыгрыша решает всё. Сражения идут на кубиках и боевых картах фракции, а побеждает тот, кто первым соберёт жетоны целей. Сейчас игра не переиздаётся и ценится на вторичном рынке."
+  },
+  {
+    id: "revive", name: "Проект «Возрождение»", orig: "Revive", year: 2022,
+    bgg: 8.0, rank: 92, weight: 3.46, pmin: 1, pmax: 4, tmin: 90, tmax: 120, age: 14,
+    bggId: 332772, initials: "ПВ", hue: ["#0e5a6b", "#7fc4c9"],
+    tags: ["Цивилизация", "Без прямого конфликта", "Колодострой", "Кампания", "Соло-режим"],
+    desc: "Спустя 5000 лет после гибели человечества племена выходят из подземных убежищ на оттаивающую поверхность. Вы исследуете местность, добываете ресурсы, строите машины на своём двухслойном планшете и заселяете древние локации, открывая забытые технологии. За ход делаете до двух действий или уходите в спячку, чтобы обновить руку. Прямых атак нет, у каждого племени своё свойство, а кампания из пяти частей постепенно открывает новый контент."
+  },
+  {
+    id: "speakeasy", name: "Спикизи", orig: "Speakeasy", year: 2025,
+    bgg: 8.4, rank: 210, weight: 4.43, pmin: 1, pmax: 4, tmin: 50, tmax: 180, age: 14,
+    bggId: 375459, initials: "SE", hue: ["#3b1e12", "#b8862f"],
+    tags: ["Евро", "Контроль территорий", "Размещение рабочих", "Доставка", "Сухой закон"],
+    desc: "Манхэттен времён сухого закона. Вы держите сеть подпольных баров: производите алкоголь, развозите его, расширяете заведения до ночных клубов и казино, устраиваете вечеринки с джазом и договариваетесь с мафией и полицией. Победных очков нет, считаются только деньги. Тяжёлая и плотная евроигра в фирменном стиле Ласерды, длительность — около 40 минут на игрока."
+  },
+  {
+    id: "fief-england", name: "Fief: England", orig: "Феод: Англия", year: 2024,
+    bgg: 8.6, rank: null, weight: 4.0, pmin: 2, pmax: 4, tmin: 120, tmax: 120, age: 14,
+    bggId: 379409, initials: "FE", hue: ["#4a1018", "#c79a3a"],
+    tags: ["Средневековье", "Дипломатия", "Союзы", "Голосование", "Контроль территорий"],
+    desc: "Средневековая Англия: каждый игрок ведёт знатный род и борется за титулы и земли. Можно заключать союзы и браки, выдвигать своих кандидатов в короли и епископы, собирать налоги, строить укрепления и воевать. Голод, чума и набеги викингов мешают всем сразу. Союзники могут победить вместе, поэтому переговоры здесь не менее важны, чем армии. Это переосмысление классической французской Fief 1981 года."
+  },
+  {
+    id: "arcs", name: "Arcs", orig: "Предел", year: 2024,
+    bgg: 8.0, rank: 102, weight: 3.4, pmin: 2, pmax: 4, tmin: 60, tmax: 120, age: 14,
+    bggId: 359871, initials: "AR", hue: ["#1b1d3a", "#e0573a"],
+    tags: ["Космоопера", "Взятки", "Контроль территорий", "Переговоры", "Битвы"],
+    desc: "Тактическая космическая опера на механике взяток. Карты четырёх мастей дают действия: строительство, перемещение флота, атаку или управление. Победные очки приносят «амбиции», которые игроки объявляют по ходу раунда, и за них тут же начинается борьба. Игра очень динамичная и конфликтная: долгий план ломается за один ход, важнее всего гибкость. Отдельно выходил набор Leaders & Lore с асимметричными лидерами."
+  },
+  {
+    id: "sweet-lands", name: "Сладкоземье", orig: "Sweet Lands", year: 2025,
+    bgg: 8.2, rank: 1165, weight: 4.2, pmin: 1, pmax: 4, tmin: 100, tmax: 200, age: 14,
+    bggId: 425445, initials: "СЗ", hue: ["#7a2a5c", "#f2a3b3"],
+    tags: ["Евро", "Строительство города", "Шестиугольники", "Асимметрия", "Соло-режим"],
+    desc: "Тяжёлое евро в королевстве сладостей. Вы правитель одного из 14 асимметричных персонажей, застраиваете гексагональные земли, наращиваете производство и собираете движок из карт и построек. Партия длится пять раундов, в каждом по четыре действия, и ресурсов всегда не хватает. Несерьёзная тема прячет жёсткую экономическую головоломку."
+  },
+  {
+    id: "galactic-cruise", name: "Галактический круиз", orig: "Galactic Cruise", year: 2025,
+    bgg: 8.3, rank: 107, weight: 4.0, pmin: 1, pmax: 4, tmin: 90, tmax: 150, age: 14,
+    bggId: 391137, initials: "ГК", hue: ["#0b2a4a", "#3fb6c9"],
+    tags: ["Евро", "Размещение рабочих", "Космос", "Экономика", "Соло-режим"],
+    desc: "Вы менеджеры компании космических круизов и соревнуетесь за кресло генерального директора. На ход можно выставить рабочего и сделать два действия, запустить корабль с туристами или вернуть рабочих с бонусами. Нужно одновременно строить корабли, радовать пассажиров, развивать технологии и нанимать персонал. Игра заканчивается, когда общий трек прогресса заполнен."
+  },
+  {
+    id: "fs-forgotten-worlds", base: "forbidden-stars", name: "Forgotten Worlds", orig: "Фанатское дополнение", year: 2020,
+    bgg: 8.6, ratingSrc: "Тесера", rank: null, weight: null, pmin: 2, pmax: 4, tmin: 120, tmax: 180, age: 14,
+    link: "https://tesera.ru/game/forbidden-stars-forgotten-worlds/", linkLabel: "Открыть на Тесере",
+    initials: "FW", hue: ["#1f2a14", "#7a8f3a"],
+    tags: ["Warhammer 40 000", "Новые фракции", "Фанатское"],
+    desc: "Фанатское дополнение, собранное энтузиастами на основе материалов, которые Fantasy Flight так и не выпустила после окончания лицензии на Warhammer 40 000. Добавляет четыре новые фракции: Астра Милитарум, некронов, Империю Тау и тиранидов. В наборе 97 миниатюр, подставки для кораблей, четыре планшета фракций и около 160 карт и жетонов. Новые армии играются по тем же правилам, что и базовые, и расширяют выбор при сборе стола."
+  },
+  {
+    id: "arcs-blighted-reach", base: "arcs", name: "Заражение", orig: "The Blighted Reach · «Предел. Заражение»", year: 2024,
+    bgg: 8.9, rank: null, weight: 4.5, pmin: 2, pmax: 4, tmin: 60, tmax: 180, age: 14,
+    link: "https://www.crowdgames.ru/collection/predel-zarazhenie", linkLabel: "Страница у Crowd Games",
+    initials: "BR", hue: ["#2a1530", "#9bbf3a"],
+    tags: ["Кампания", "Сюжет", "Судьбы", "Переговоры", "Битвы"],
+    desc: "Большое дополнение, которое превращает Arcs в кампанию из трёх связанных партий. Каждый игрок получает одну из 24 судеб: у неё свои цели, способности и компоненты. Между актами можно остаться верным своему пути или резко сменить курс. История складывается из ваших решений на поле, а не из заранее написанного сценария. Компоненты не уничтожаются, поэтому кампанию можно проходить заново."
+  },
+  {
+    id: "tainted-grail", name: "Осквернённый Грааль", orig: "Tainted Grail: The Fall of Avalon · Падение Авалона", year: 2019,
+    bgg: 8.1, rank: 99, weight: 3.4, pmin: 1, pmax: 4, tmin: 60, tmax: 120, age: 14,
+    bggId: 264220, initials: "ОГ", hue: ["#13261e", "#5f8a5a"],
+    tags: ["Кооператив", "Приключение", "Сюжетная кампания", "Тёмное фэнтези", "Соло-режим"],
+    desc: "Кооперативная сюжетная кампания в мрачной версии артуровских легенд. Авалон гибнет: менгиры, сдерживающие порчу, гаснут, и герои отправляются в путешествие, чтобы понять, что происходит. Большая часть игры — исследование карты из локаций и чтение книги путешествий, где каждое решение меняет историю. Сражения и дипломатия разыгрываются колодами карт. Важно следить за едой, энергией и рассудком героя."
+  },
+  {
+    id: "tg-age-of-legends-last-knight", base: "tainted-grail", name: "Эпоха легенд и Последний рыцарь", orig: "Age of Legends & Last Knight Campaigns", year: 2020,
+    bgg: 8.3, rank: null, weight: 3.3, pmin: 1, pmax: 4, tmin: 120, tmax: 180, age: 14,
+    bggId: 274795, initials: "ЭЛ", hue: ["#3a2a10", "#c9a24a"],
+    tags: ["Кампания", "Сюжет", "Альтернативная история", "Продолжение"],
+    desc: "Две новые кампании к «Падению Авалона». «Эпоха легенд» переносит действие во времена, когда легендарные рыцари ещё были живы: это иной вариант истории с другими событиями и героями, менее требовательный к ресурсам и более насыщенный сюжетом и сражениями. «Последний рыцарь» — прямое продолжение основной кампании, рассчитанное на тех, кто её уже прошёл: новые главы, локации и угрозы."
+  },
+  {
+    id: "tg-red-death", base: "tainted-grail", name: "Красная смерть", orig: "Red Death", year: 2020,
+    bgg: 8.4, rank: null, weight: 3.6, pmin: 1, pmax: 4, tmin: 60, tmax: 120, age: 14,
+    initials: "КС", hue: ["#3a0a0e", "#c0392b"],
+    link: "https://www.boardgameoracle.com/boardgame/price/g631kkNkhO/tainted-grail-the-fall-of-avalon-red-death-expansion", linkLabel: "Описание дополнения",
+    tags: ["Испытание", "Усложнение", "Новые угрозы"],
+    desc: "Усложнённая кампания для опытных игроков. Добавляет новую сюжетную линию и угрозы, которые заметно поднимают ставки: ресурсов меньше, ошибки стоят дороже. Подходит тем, кому базовая кампания показалась слишком лёгкой."
+  },
+  {
+    id: "kings-of-ruin", name: "Короли Краха", orig: "Tainted Grail: Kings of Ruin · «Осквернённый Грааль. Короли краха»", year: 2023,
+    bgg: 8.2, rank: null, weight: null, pmin: 1, pmax: 4, tmin: 90, tmax: 120, age: 14,
+    bggId: 360366, initials: "КК", hue: ["#1a1030", "#7d5bb5"],
+    tags: ["Кооператив", "Приключение", "Сюжетная кампания", "Тёмное фэнтези", "Соло-режим"],
+    desc: "Самостоятельная игра во вселенной «Осквернённого Грааля», база не нужна. Новая кампания о трёх враждующих правителях, разоряющих земли Авалона. По сравнению с первой частью переработаны исследование, бои и развитие героев, меньше рутины и больше сюжета. Подходит и новичкам серии, и тем, кто прошёл первую часть."
+  },
+  {
+    id: "eleven", name: "Eleven", orig: "Football Manager Board Game", year: 2022,
+    bgg: 7.5, rank: 2222, weight: 3.4, pmin: 1, pmax: 4, tmin: 60, tmax: 120, age: 14,
+    bggId: 358386, initials: "11", hue: ["#0f3b22", "#3fa05a"],
+    link: "https://www.boardgameoracle.com/boardgame/price/FMZe1DFuoQ/eleven-football-manager-board-game", linkLabel: "Описание игры",
+    tags: ["Спорт", "Футбол", "Экономика", "Драфт", "Соло-режим"],
+    desc: "Вы управляете футбольным клубом: покупаете и продаёте игроков, нанимаете персонал, развиваете стадион, ищете спонсоров и угождаете болельщикам. Матчи разыгрываются быстро, через силу состава и тактику, а основная игра идёт в управлении клубом между ними. Есть сценарии с разными целями сезона и соло-режим."
+  },
+  {
+    id: "ascension", name: "Ascension", orig: "Deckbuilding Game", year: 2010,
+    bgg: 7.0, rank: 824, weight: 2.1, pmin: 1, pmax: 4, tmin: 30, tmax: 30, age: 13,
+    bggId: 69789, initials: "AS", hue: ["#122a52", "#e0b84a"],
+    tags: ["Колодострой", "Карточная", "Фэнтези", "Быстрая"],
+    desc: "Быстрая колодостроительная игра. Каждый ход вы разыгрываете руку: руны покупают героев и конструкты в общий ряд, мощь бьёт монстров ради очков. Центральный ряд постоянно обновляется, поэтому планировать надо на ходу. Партия занимает около получаса, правила объясняются за пять минут."
+  },
+  {
+    id: "frostpunk", name: "Frostpunk", orig: "The Board Game", year: 2022,
+    bgg: 8.3, rank: 664, weight: 4.3, pmin: 1, pmax: 4, tmin: 120, tmax: 150, age: 16,
+    bggId: 311988, initials: "FP", hue: ["#1b2a36", "#e07a2e"],
+    tags: ["Кооператив", "Выживание", "Строительство города", "Сценарии", "Соло-режим"],
+    desc: "Кооперативная адаптация видеоигры: после наступления нового ледникового периода вы управляете последним городом вокруг огромного генератора. Нужно добывать уголь и еду, строить, исследовать технологии, принимать законы и не дать людям замёрзнуть или взбунтоваться. Мороз крепчает с каждым раундом, а решения часто морально тяжёлые. Игра идёт по сценариям с разными целями."
+  },
+  {
+    id: "pest", name: "Чума", orig: "Pest", year: 2024,
+    bgg: 8.1, rank: null, weight: null, pmin: 1, pmax: 5, tmin: 60, tmax: 150, age: 14,
+    bggId: 353572, initials: "Ч", hue: ["#2b2618", "#a33a2a"],
+    tags: ["Евро", "Размещение рабочих", "Контроль территорий", "Цивилизация"],
+    desc: "Евростратегия о восстановлении империи после эпидемии. Игроки — знатные дома, которые лечат выживших, отстраивают разрушенные города и сдерживают распространение болезни с помощью медицины и науки. Чума при этом продолжает двигаться по карте и задевает всех. Правила несложные, но взаимодействие между игроками плотное."
+  },
+  {
+    id: "rallyman-gt", name: "Rallyman: GT", orig: "Раллимэн", year: 2020,
+    bgg: 7.3, rank: 1037, weight: 2.2, pmin: 1, pmax: 6, tmin: 45, tmax: 60, age: 14,
+    bggId: 256589, initials: "GT", hue: ["#101a2b", "#e8c21e"],
+    tags: ["Гонки", "Кубики", "Испытай удачу", "Соло-режим", "Быстрая"],
+    desc: "Гонки на гоночных автомобилях класса GT по трассе из шестиугольников. Каждый ход вы бросаете кубики передач и тормозов, решая, сколько рискнуть: чем больше кубиков, тем дальше уедете, но три знака опасности означают вылет с трассы. Можно бросать все кубики сразу ради скорости или по одному ради контроля. Трассу собирают из модулей, поэтому каждый заезд разный."
+  },
+  {
+    id: "defenders-of-the-wild", name: "Защитники Диких Земель", orig: "Defenders of the Wild", year: 2024,
+    bgg: 7.1, rank: 3927, weight: 3.1, pmin: 1, pmax: 4, tmin: 60, tmax: 120, age: 14,
+    initials: "ЗД", hue: ["#1d3a1a", "#d98a2b"],
+    link: "https://www.boardgameoracle.com/boardgame/price/M3iieCARaI/defenders-of-the-wild", linkLabel: "Описание игры",
+    tags: ["Кооператив", "Животные", "Контроль территорий", "Колодострой", "Соло-режим"],
+    desc: "Кооператив, в котором лесные звери защищают свои земли от наступающей армии машин. Каждый игрок управляет героем-животным с собственной колодой и способностями. Нужно освобождать области, объединять кланы и улучшать карты, пока враг расползается по карте. Победа достигается совместной работой, проигрывают все вместе."
+  },
+  {
+    id: "age-of-galaxy", name: "Эра Галактики", orig: "Age of Galaxy", year: 2022,
+    bgg: 7.8, rank: 3659, weight: 3.1, pmin: 1, pmax: 4, tmin: 45, tmax: 60, age: 12,
+    initials: "ЭГ", hue: ["#0d1530", "#8a5cf0"],
+    link: "https://www.boardgameoracle.com/boardgame/price/UNObJTELdT/age-of-galaxy", linkLabel: "Описание игры",
+    tags: ["Космос", "4X", "Цивилизация", "Драфт", "Соло-режим"],
+    desc: "Компактная космическая стратегия, сочетающая 4X и евро. Каждый игрок управляет союзом из трёх фракций: колонизирует планеты, строит крейсеры, исследует аномалии, развивает технологии и восстанавливает артефакты. Можно возглавить галактический конгресс или торговать ресурсами с соседями. Партия укладывается в час, игра помещается в небольшую коробку."
+  },
+  {
+    id: "beast", coming: true, name: "Зверь", orig: "Beast", year: 2023,
+    bgg: 7.4, rank: null, weight: 3.1, pmin: 2, pmax: 4, tmin: 120, tmax: 180, age: 14,
+    initials: "ЗВ", hue: ["#1a2416", "#8c6a3a"],
+    link: "https://tesera.ru/game/beast/", linkLabel: "Открыть на Тесере",
+    tags: ["Один против всех", "Асимметрия", "Охота", "Скрытое перемещение", "Фэнтези"],
+    desc: "Асимметричная игра «один против всех». Один игрок управляет древним магическим Зверем, который защищает свою территорию, остальные — охотниками, которые идут по его следу. Зверь двигается скрытно, охотники собирают улики и пытаются загнать его в ловушку, а сам Зверь может сам перейти в нападение. Кто здесь охотник, а кто добыча, меняется по ходу партии. У каждого персонажа свои способности и история."
+  },
+  {
+    id: "beast-shattered-isles", base: "beast", coming: true, name: "Расколотые острова", orig: "Shattered Isles", year: 2024,
+    bgg: 9.4, rank: null, weight: 3.5, pmin: 2, pmax: 4, tmin: 60, tmax: 120, age: 14,
+    initials: "РО", hue: ["#10283a", "#4f9bb8"],
+    link: "https://nastol.io/beast_shattered_isles", linkLabel: "Описание дополнения",
+    tags: ["Новый мир", "Новые звери", "Новые охотники", "Контракты"],
+    desc: "Первое большое дополнение к «Зверю». Охотники отправляются на опасный архипелаг за древними знаниями о слабостях зверей и случайно выпускают то, что угрожает всему человечеству. В коробке новый двусторонний мир, планшеты сценариев, новые звери и охотники с миниатюрами, спутники, контракты и новые механики. Оценка 9.4 на BGG пока выставлена небольшим числом игроков."
+  },
+  {
+    id: "beast-great-hunt", base: "beast", coming: true, name: "Великая охота", orig: "The Great Hunt", year: 2025,
+    bgg: null, rank: null, weight: null, pmin: 4, pmax: 4, tmin: 120, tmax: 180, age: 14,
+    initials: "ВО", hue: ["#3a1a12", "#d4783a"],
+    link: "https://pegasusna.com/Beast-The-Great-Hunt-Expansion/PNA56424.USA", linkLabel: "Описание дополнения",
+    tags: ["Кампания", "Сюжет", "Ветвление", "Только вчетвером"],
+    desc: "Сюжетная кампания для «Зверя» строго на четырёх игроков. История из нескольких связанных глав с погонями, сильными зверями и поворотами судьбы, сюжет занимает больше 50 страниц и ведёт к одной из шести концовок. Добавляет двух персонажей, капитана Великой охоты Эсмерию и Пернатого короля, которых можно брать и в обычные партии. Оценки на BGG пока нет, время партии указано ориентировочно."
+  },
+  {
+    id: "ascendancy", coming: true, name: "Ascendancy", orig: "Возвышение", year: 2024,
+    bgg: 7.7, rank: 5703, weight: 3.8, pmin: 1, pmax: 4, tmin: 90, tmax: 480, age: 12,
+    bggId: 258295, initials: "AC", hue: ["#2a1a3a", "#d1a440"],
+    tags: ["4X", "Размещение рабочих", "Фэнтези", "Строительство движка", "Асимметрия"],
+    desc: "Большая стратегия на стыке размещения рабочих и 4X. Игроки возглавляют асимметричные королевские дома и борются за трон на протяжении нескольких поколений. Путей к победе много: строить империю вверх, расширяться по карте, управлять экономикой или побеждать на полях сражений. Улучшить можно почти всё, поэтому каждое королевство получается своим. Партия может длиться от полутора часов до целого вечера."
+  },
+  {
+    id: "onward", coming: true, name: "Onward", orig: "MOBA Board Game", year: 2025,
+    bgg: 8.5, rank: 4797, weight: 3.1, pmin: 2, pmax: 4, tmin: 45, tmax: 90, age: 14,
+    bggId: 431929, initials: "ON", hue: ["#0e2a3a", "#e05a3a"],
+    tags: ["MOBA", "Сражения", "Миниатюры", "Команды", "Многоразовые карты"],
+    desc: "Настольная версия жанра MOBA. Две команды героев сражаются на арене, проталкивают волны миньонов по линиям и пробиваются к базе соперника. У каждого героя своя колода многоразовых карт, действия тратят очки, а контроль ключевых точек карты решает исход боя. Партия быстрая и очень тактическая."
+  },
+  {
+    id: "ironwood", coming: true, name: "Ironwood", orig: "Айронвуд", year: 2024,
+    bgg: 8.2, rank: 5728, weight: 2.8, pmin: 1, pmax: 2, tmin: 30, tmax: 60, age: 12,
+    bggId: 407343, initials: "IW", hue: ["#1a2a1e", "#b0b8a8"],
+    tags: ["Дуэль", "Асимметрия", "Варгейм", "Командные карты", "Соло-режим"],
+    desc: "Асимметричная дуэль: силы древнего леса против индустриальной армии, которая стремится его покорить. Каждая сторона играет по своим правилам и со своими целями. Карты приказов тратятся и на движение, и на атаку, и на особые действия, а бой разрешается картами. Партия длится меньше часа, есть соло-режим."
+  },
+  {
+    id: "barrage", loc: "away", name: "Плотина", orig: "Barrage", year: 2019,
+    bgg: 8.1, rank: 40, weight: 4.1, pmin: 1, pmax: 4, tmin: 90, tmax: 180, age: 14,
+    bggId: 224517, initials: "ПЛ", hue: ["#1b2a33", "#4a90a8"],
+    link: "https://www.boardgameoracle.com/boardgame/price/h_e-3bcNat/barrage", linkLabel: "Описание игры",
+    tags: ["Евро", "Размещение рабочих", "Экономика", "Контракты", "Асимметрия"],
+    desc: "Жёсткое экономическое евро об энергетике в альтернативных 1920-х. Компании строят в горах плотины, каналы и электростанции, чтобы выполнять контракты на выработку энергии. Вода течёт сверху вниз по общей карте, поэтому чужая плотина выше по течению может перехватить вашу воду. Строительство требует экскаваторов и бетономешалок, которые надолго выбывают из игры. Конкуренция плотная, ошибки дорого стоят."
+  },
+  {
+    id: "brazil-imperial", loc: "away", name: "Бразилия", orig: "Brazil: Imperial", year: 2021,
+    bgg: 7.7, rank: 968, weight: 3.0, pmin: 1, pmax: 4, tmin: 100, tmax: 100, age: 14,
+    bggId: 249277, initials: "БР", hue: ["#0f3a26", "#e0b830"],
+    tags: ["Цивилизация", "Строительство", "Исследование", "Выкладывание тайлов"],
+    desc: "Игроки возглавляют дома, которые в XIX веке осваивают Бразильскую империю. Вы исследуете шестиугольную карту, основываете города, строите здания, развиваете экономику и армию. Победных путей несколько: строительство, военные успехи, культура и поддержка монархов. Можно воевать с соседями за территорию, а можно сосредоточиться на мирном развитии."
+  },
+  {
+    id: "root", loc: "away", name: "Корни", orig: "Root", year: 2018,
+    bgg: 8.1, rank: 34, weight: 3.8, pmin: 2, pmax: 4, tmin: 60, tmax: 90, age: 14,
+    bggId: 237182, initials: "КО", hue: ["#3a2412", "#d9822b"],
+    tags: ["Асимметрия", "Контроль территорий", "Лесные звери", "Переговоры", "Битвы"],
+    desc: "Асимметричная война в лесу. Кошачья маркиза строит промышленную империю, орлиные династии подчиняются строгому указу, Лесной союз поднимает восстание, а бродяга странствует сам по себе. У каждой фракции свои правила и способ набирать очки, поэтому каждый играет по сути в свою игру. Важно понимать соперников и вовремя договариваться, чтобы никто не вырвался вперёд."
+  },
+  {
+    id: "ascension-tactics", loc: "away", name: "Ascension Tactics", orig: "Miniatures Deckbuilding Game", year: 2022,
+    bgg: 8.3, rank: 3414, weight: 2.4, pmin: 1, pmax: 4, tmin: 60, tmax: 60, age: 13,
+    initials: "AT", hue: ["#122a52", "#c23b3b"],
+    link: "https://www.boardgameoracle.com/boardgame/price/ylaS5KffGl/ascension-tactics-miniatures-deckbuilding-game", linkLabel: "Описание игры",
+    tags: ["Колодострой", "Миниатюры", "Тактика", "Кампания", "Соло-режим"],
+    desc: "Тактическая игра с миниатюрами на основе колодостроя из вселенной Ascension. Карты из общего ряда приносят новых героев и способности, а сражения разыгрываются на поле с клетками: позиция и дальность атаки важны не меньше, чем колода. Можно играть друг против друга, в командах или проходить кооперативную кампанию."
+  },
+  {
+    id: "endeavor-deep-sea", loc: "away", name: "Экспедиция. Морские глубины", orig: "Endeavor: Deep Sea", year: 2024,
+    bgg: 8.2, rank: 70, weight: 2.9, pmin: 1, pmax: 4, tmin: 60, tmax: 120, age: 10,
+    initials: "ЭМ", hue: ["#08263a", "#2fb3c9"],
+    link: "https://www.boardgameoracle.com/boardgame/price/6ebufUKGoh/endeavor-deep-sea", linkLabel: "Описание игры",
+    tags: ["Евро", "Исследование", "Океан", "Управление ресурсами", "Соло-режим"],
+    desc: "Исследование океанских глубин. Каждый игрок руководит научной экспедицией: отправляет подлодки вглубь моря, открывает новые зоны, изучает обитателей и выполняет исследовательские цели. Действия питают друг друга: открытия усиливают ваше влияние, а влияние открывает новые возможности. Средняя по сложности евростратегия с соло-режимом."
+  },
+  {
+    id: "dune-imperium", loc: "away", name: "Дюна: Империя", orig: "Dune: Imperium", year: 2020,
+    bgg: 8.4, rank: 7, weight: 3.1, pmin: 1, pmax: 4, tmin: 60, tmax: 120, age: 14,
+    initials: "ДИ", hue: ["#3a2410", "#e0a040"],
+    link: "https://www.boardgameoracle.com/boardgame/price/mSERjC0BEt/dune-imperium", linkLabel: "Описание игры",
+    tags: ["Колодострой", "Размещение рабочих", "Дюна", "Конфликт", "Соло-режим"],
+    desc: "Великие дома борются за влияние на Арракисе. Каждый ход вы разыгрываете карту, чтобы отправить агента на одну из локаций, а затем всей рукой участвуете в раскрытии и сражении. Колоду можно улучшать, заводить союзы с фракциями Бене Гессерит, Гильдии, фрименов и самого Императора. Конфликт за каждый раунд приносит награды, а войска приходится расходовать с умом. Одна из самых популярных игр на BGG."
+  },
+  {
+    id: "dune-rise-of-ix", base: "dune-imperium", name: "Расцвет Иксианцев", orig: "Rise of Ix", year: 2022,
+    bgg: 8.8, rank: null, weight: 3.1, pmin: 1, pmax: 4, tmin: 60, tmax: 120, age: 14,
+    initials: "РИ", hue: ["#1e2a3a", "#7aa0c8"],
+    link: "https://www.boardgameoracle.com/boardgame/price/vb9XElrchi/dune-imperium-rise-of-ix", linkLabel: "Описание дополнения",
+    tags: ["Технологии", "Дредноуты", "Новые лидеры"],
+    desc: "Первое большое дополнение. Добавляет иксианские технологии, которые дают постоянные бонусы, дредноуты для контроля и сражений, торговые перевозки CHOAM, новых лидеров и карты. Заметно расширяет стратегические возможности и делает игру менее зависимой от конфликтов."
+  },
+  {
+    id: "dune-immortality", base: "dune-imperium", name: "Бессмертие", orig: "Immortality", year: 2022,
+    bgg: 9.0, rank: null, weight: 3.0, pmin: 1, pmax: 4, tmin: 60, tmax: 120, age: 14,
+    initials: "БС", hue: ["#2a1a2a", "#9a6ab0"],
+    link: "https://www.boardgameoracle.com/boardgame/price/R6paT6BDTM/dune-imperium-immortality", linkLabel: "Описание дополнения",
+    tags: ["Бене Тлейлакс", "Генетика", "Новые карты"],
+    desc: "Дополнение о Бене Тлейлакс. Добавляет трек исследований, экономику образцов и механику «прививки», когда одна карта соединяется с другой для более сильного эффекта. Также появляется способность «семейные атомики». Хорошо сочетается с «Расцветом Иксианцев»."
+  },
+  {
+    id: "dune-bloodlines", base: "dune-imperium", name: "Кровные узы", orig: "Bloodlines", year: 2025,
+    bgg: 8.6, rank: null, weight: 3.6, pmin: 1, pmax: 4, tmin: 60, tmax: 120, age: 14,
+    initials: "КУ", hue: ["#3a0e12", "#c0503a"],
+    link: "https://www.boardgameoracle.com/boardgame/price/mifwkORJA8/dune-imperium-bloodlines", linkLabel: "Описание дополнения",
+    tags: ["Новые лидеры", "Новые карты", "Совместимо с «Восстанием»"],
+    desc: "Дополнение с новыми лидерами и картами, которое углубляет существующие системы. Работает и с базовой «Дюной: Империя», и с «Восстанием», поэтому его можно использовать с любой из двух коробок."
+  },
+  {
+    id: "dune-uprising", loc: "away", name: "Дюна: Империя — Восстание", orig: "Dune: Imperium – Uprising", year: 2023,
+    bgg: 8.7, rank: 5, weight: 3.5, pmin: 1, pmax: 6, tmin: 60, tmax: 120, age: 13,
+    bggId: 397598, initials: "ДВ", hue: ["#2a1608", "#d98a2b"],
+    tags: ["Колодострой", "Размещение рабочих", "Дюна", "Шпионы", "Командный режим"],
+    desc: "Самостоятельная переработка «Дюны: Империя», база не нужна. Добавлены шпионы, которые позволяют проникать на занятые локации, контракты CHOAM, песчаные черви в сражениях и новая карта. Появился режим на шесть игроков в двух командах. На BGG входит в пятёрку лучших игр."
+  },
+  {
+    id: "hegemony", loc: "away", name: "Гегемония", orig: "Hegemony: Lead Your Class to Victory", year: 2023,
+    bgg: 8.4, rank: 41, weight: 4.3, pmin: 2, pmax: 4, tmin: 90, tmax: 180, age: 14,
+    bggId: 321608, initials: "ГЕ", hue: ["#3a1418", "#c8a03a"],
+    tags: ["Экономика", "Политика", "Асимметрия", "Голосование", "Симуляция"],
+    desc: "Политико-экономическая симуляция современного государства. Каждый игрок — свой общественный класс: рабочие, средний класс, капиталисты или государство. У всех разные цели, ресурсы и правила. Через законы, голосования, забастовки и рынки игроки тянут экономику в свою сторону. Игра сложная, но очень тематичная."
+  },
+  {
+    id: "tm-ares", loc: "away", name: "Покорение Марса: Экспедиция «Арес»", orig: "Terraforming Mars: Ares Expedition", year: 2021,
+    bgg: 7.7, rank: 150, weight: 2.9, pmin: 1, pmax: 4, tmin: 45, tmax: 60, age: 14,
+    bggId: 328871, initials: "ПМ", hue: ["#3a1408", "#e0602a"],
+    tags: ["Евро", "Карточная", "Движок", "Одновременный выбор фаз", "Соло-режим"],
+    desc: "Быстрая карточная версия «Покорения Марса». Корпорации вместе поднимают температуру, насыщают атмосферу кислородом и создают океаны, но очки каждый набирает себе. Каждый раунд игроки втайне выбирают фазу, и выполняются только выбранные фазы, причём выбравший получает бонус. Нет общего поля: весь движок строится из карт перед вами. Партия занимает около часа."
+  },
+  {
+    id: "the-gang", loc: "away", name: "The Gang", orig: "Кооперативный покер", year: 2024,
+    bgg: 7.6, rank: 355, weight: 1.6, pmin: 3, pmax: 6, tmin: 20, tmax: 20, age: 10,
+    bggId: 411567, initials: "TG", hue: ["#0d2a1a", "#c8a03a"],
+    tags: ["Кооператив", "Покер", "Компания", "Быстрая", "Без слов"],
+    desc: "Кооперативный покер: команда грабителей пытается провернуть серию ограблений. Каждый получает две карты, а после каждой выкладки общих карт игроки молча берут фишки, оценивая, насколько сильна их комбинация относительно других. В конце руки ранжируются, и если порядок фишек совпал с реальной силой рук, ограбление удалось. Разговаривать о картах нельзя. Партия длится около 20 минут."
+  },
+  {
+    id: "circadians-chaos-order", loc: "away", name: "Циркадианцы: Власть хаоса", orig: "Circadians: Chaos Order", year: 2022,
+    bgg: 8.2, rank: 7438, weight: 3.8, pmin: 2, pmax: 5, tmin: 120, tmax: 240, age: 12,
+    initials: "ЦХ", hue: ["#1a1430", "#c04aa0"],
+    link: "https://www.boardgameoracle.com/boardgame/price/ABmtx2vjA3/circadians-chaos-order", linkLabel: "Описание игры",
+    tags: ["Космос", "Асимметрия", "Контроль территорий", "Драфт действий", "Битвы"],
+    desc: "Масштабная асимметричная стратегия о борьбе инопланетных фракций за власть над планетой. Каждая раса играет по-своему: у неё свои способности, юниты и пути к победе. Игроки отправляют агентов на выбор действий, перемещают войска, сражаются за регионы, собирают ресурсы и выполняют задания. Партия долгая и насыщенная, особенно в полном составе."
+  },
+  {
+    id: "welcome-to", loc: "away", name: "Бумажные кварталы", orig: "Welcome To...", year: 2018,
+    bgg: 7.6, rank: 135, weight: 1.8, pmin: 1, pmax: 100, tmin: 25, tmax: 25, age: 10,
+    initials: "БК", hue: ["#1e3a5a", "#e8b23a"],
+    tags: ["Рисование", "Одновременные ходы", "Быстрая", "Компания", "Соло-режим"],
+    desc: "Игра на бумаге и карандаше в духе американских пригородов 1950-х. Каждый ход открываются три пары карт, и все одновременно выбирают одну: номер дома и действие. Номера на улицах должны идти по возрастанию, а действия помогают строить бассейны, парки, заборы и выполнять городские планы. Играть может сколько угодно человек, партия занимает около 25 минут."
+  },
+  {
+    id: "flip-7", loc: "away", name: "Flip 7", orig: "Флип 7", year: 2024,
+    bgg: 7.2, rank: 513, weight: 1.0, pmin: 3, pmax: 18, tmin: 20, tmax: 20, age: 8,
+    initials: "F7", hue: ["#3a0e2a", "#f05a5a"],
+    tags: ["Испытай удачу", "Карточная", "Быстрая", "Компания"],
+    desc: "Простая карточная игра на риск. В свой ход вы берёте карты по одной и складываете их значения. Можно остановиться в любой момент и записать очки, но если вытянете второй раз то же число, всё за раунд сгорает. Собрали семь разных чисел — получаете бонус. Подходит для больших компаний, правила объясняются за минуту."
+  },
+  {
+    id: "secret-hitler", loc: "away", name: "Secret Hitler", orig: "Тайный Гитлер", year: 2016,
+    bgg: 7.6, rank: 178, weight: 1.7, pmin: 5, pmax: 10, tmin: 45, tmax: 45, age: 13,
+    initials: "SH", hue: ["#2a1a10", "#d9822b"],
+    tags: ["Скрытые роли", "Дедукция", "Голосование", "Блеф", "Компания"],
+    desc: "Командная игра на скрытые роли в декорациях парламента 1930-х. Большинство игроков — либералы, меньшинство — фашисты, и только фашисты знают друг друга. Каждый раунд выбираются президент и канцлер, которые тайно принимают законы из колоды. Либералам нужно вычислить врагов по голосованиям и решениям, фашистам — запутать всех и провести свои законы."
+  },
+  {
+    id: "five-tribes", loc: "away", name: "Пять племён", orig: "Five Tribes", year: 2014,
+    bgg: 7.8, rank: 94, weight: 2.8, pmin: 2, pmax: 4, tmin: 40, tmax: 80, age: 13,
+    initials: "ПП", hue: ["#3a1e08", "#e0a040"],
+    tags: ["Евро", "Мэнкала", "Аукцион", "Сеты"],
+    desc: "Султанат Накала из «Тысячи и одной ночи». На поле из тайлов стоят разноцветные фигурки пяти племён. В свой ход вы берёте все фигурки с одного тайла и раскладываете их по одной по соседним, как в мэнкале. Последний цвет определяет действие: купцы приносят товары, визири очки, убийцы устраняют чужие фигурки. Очередь хода выкупается на аукционе."
+  },
+  {
+    id: "unmatched-cobble-fog", loc: "away", name: "Unmatched: Туман над мостовой", orig: "Unmatched: Cobble & Fog", year: 2020,
+    bgg: 8.2, rank: 212, weight: 2.0, pmin: 2, pmax: 4, tmin: 20, tmax: 40, age: 9,
+    initials: "UN", hue: ["#1a1a24", "#8a8fa3"],
+    tags: ["Дуэль", "Сражения", "Асимметрия", "Быстрая"],
+    desc: "Набор системы Unmatched с героями викторианского Лондона: Шерлок Холмс, Дракула, доктор Джекил и мистер Хайд, Человек-невидимка. Каждый герой играет своей колодой со своими приёмами. Бойцы перемещаются по полю, разыгрывают карты атаки и защиты, и побеждает тот, кто первым сразит героя соперника. Совместим со всеми коробками Unmatched."
+  },
+  {
+    id: "unmatched-witcher-realms-fall", loc: "away", name: "Unmatched. Ведьмак: Гибель королевств", orig: "Unmatched: The Witcher – Realms Fall", year: 2024,
+    bgg: null, rank: null, weight: 2.0, pmin: 2, pmax: 3, tmin: 20, tmax: 40, age: 14,
+    initials: "ВГ", hue: ["#1a1410", "#c0503a"],
+    tags: ["Дуэль", "Сражения", "Асимметрия", "Ведьмак"],
+    desc: "Набор Unmatched во вселенной «Ведьмака» с новыми героями и картой. Каждый боец играет своей колодой с уникальными приёмами и особенностями, бой идёт за позицию на поле и розыгрыш карт. Совместим с другими коробками Unmatched и с «Сталью и серебром»."
+  },
+  {
+    id: "unmatched-witcher-steel-silver", loc: "away", name: "Unmatched. Ведьмак: Сталь и серебро", orig: "Unmatched: The Witcher – Steel and Silver", year: 2024,
+    bgg: null, rank: null, weight: 2.0, pmin: 2, pmax: 3, tmin: 20, tmax: 40, age: 14,
+    initials: "ВС", hue: ["#14181e", "#a0a8b8"],
+    tags: ["Дуэль", "Сражения", "Асимметрия", "Ведьмак"],
+    desc: "Второй набор Unmatched во вселенной «Ведьмака» со своими героями и картой. Каждый боец играет собственной колодой, а партии короткие и тактические. Совместим с «Гибелью королевств» и любыми другими коробками Unmatched."
+  },
+  {
+    id: "feed-the-kraken", loc: "away", name: "Кто накормит Кракена?", orig: "Feed the Kraken", year: 2022,
+    bgg: 8.1, rank: 2353, weight: 2.0, pmin: 5, pmax: 11, tmin: 45, tmax: 90, age: 12,
+    initials: "КК", hue: ["#0a2433", "#3a9ab8"],
+    tags: ["Скрытые роли", "Дедукция", "Голосование", "Пираты", "Компания"],
+    desc: "Игра на скрытые роли на пиратском корабле. Моряки хотят довести судно до гавани, пираты — увести его в свои воды, а культист мечтает скормить корабль Кракену. Капитан, лейтенант и штурман совместно прокладывают курс, разыгрывая карты навигации втёмную, а экипаж может поднять бунт или скормить кого-нибудь морскому чудовищу."
+  },
+  {
+    id: "the-white-castle", loc: "away", name: "Белый замок", orig: "The White Castle", year: 2023,
+    bgg: 8.0, rank: 72, weight: 3.1, pmin: 1, pmax: 4, tmin: 80, tmax: 80, age: 12,
+    initials: "БЗ", hue: ["#1e1e24", "#c84a3a"],
+    tags: ["Евро", "Кубики", "Размещение рабочих", "Комбо", "Соло-режим"],
+    desc: "Компактное евро в замке Химэдзи. Каждый раунд игроки берут кубики с мостов и ставят их на действия в саду, на стенах или во дворце, а значение кубика определяет, выгодно ли действие. Цепочки бонусов позволяют за один ход сделать сразу несколько действий. Партия всего три раунда, поэтому каждое решение на счету."
+  },
+  {
+    id: "galaxy-trucker", loc: "away", name: "Космические дальнобойщики", orig: "Galaxy Trucker", year: 2021,
+    bgg: 7.6, rank: 961, weight: 2.4, pmin: 2, pmax: 4, tmin: 20, tmax: 30, age: 8,
+    initials: "КД", hue: ["#0e1a3a", "#e8c21e"],
+    tags: ["Реальное время", "Сборка корабля", "Испытай удачу", "Весёлая"],
+    desc: "Сначала все одновременно и на скорость собирают космический корабль из тайлов: двигатели, пушки, щиты, каюты для экипажа. Потом корабли летят по маршруту, где их ждут метеориты, пираты и контрабандисты. Плохо собранный корабль разваливается прямо в полёте, и это главная часть веселья. Новое издание 2021 года."
+  },
+  {
+    id: "the-wolves", loc: "away", name: "Волки", orig: "The Wolves", year: 2022,
+    bgg: 7.5, rank: 1927, weight: 2.8, pmin: 2, pmax: 5, tmin: 75, tmax: 75, age: 14,
+    initials: "ВЛ", hue: ["#1a2433", "#9ab0c8"],
+    tags: ["Контроль территорий", "Шестиугольники", "Животные"],
+    desc: "Стратегия о волчьих стаях, которые расширяют свою территорию. Чтобы действовать, игроки переворачивают двусторонние тайлы местности на своём планшете: перемещают волков, строят логова, ищут одиночек для пополнения стаи. Подсчёт очков за области запускается по ходу игры, поэтому важно вовремя занять нужные места."
+  },
+  {
+    id: "blood-rage", loc: "away", name: "Blood Rage", orig: "Кровь и ярость", year: 2015,
+    bgg: 7.9, rank: 63, weight: 2.9, pmin: 2, pmax: 4, tmin: 60, tmax: 90, age: 14,
+    initials: "BR", hue: ["#2a0a0e", "#c0392b"],
+    tags: ["Контроль территорий", "Драфт карт", "Миниатюры", "Викинги", "Битвы"],
+    desc: "Кланы викингов готовятся к Рагнарёку и стремятся к славе. Перед каждой эпохой игроки драфтят карты: улучшения клана, монстров и задания. Затем отправляют воинов в провинции, грабят их и сражаются. Погибнуть в бою здесь не страшно, ведь павшие уходят в Вальгаллу и тоже приносят очки. Одна из самых известных игр Эрика Ланга."
+  },
+  {
+    id: "cosmic-encounter", loc: "away", name: "Космический контакт", orig: "Cosmic Encounter", year: 2008,
+    bgg: 7.5, rank: 137, weight: 2.6, pmin: 3, pmax: 5, tmin: 60, tmax: 120, age: 12,
+    initials: "КК", hue: ["#140e2a", "#8a5cf0"],
+    tags: ["Переговоры", "Союзы", "Асимметрия", "Блеф", "Космос"],
+    desc: "Классика переговоров и блефа. Каждый игрок — инопланетная раса с уникальной способностью, нарушающей правила. Цель — основать колонии в чужих системах. В каждом столкновении нападающий и защитник зовут союзников и втайне выбирают карты боя или переговоров. Можно победить сразу нескольким игрокам, поэтому договориться иногда выгоднее, чем воевать."
+  },
+  {
+    id: "sea-salt-paper", loc: "away", name: "Море, соль, бумага", orig: "Sea Salt & Paper", year: 2022,
+    bgg: 7.5, rank: 256, weight: 1.5, pmin: 2, pmax: 4, tmin: 30, tmax: 45, age: 8,
+    initials: "МС", hue: ["#2a7aa8", "#bfe4f0"],
+    tags: ["Карточная", "Сеты", "Испытай удачу", "Быстрая"],
+    desc: "Небольшая карточная игра с оригами-иллюстрациями. В свой ход вы берёте карту из колоды или из сброса и собираете пары и наборы морских обитателей и предметов: пары разыгрываются ради эффектов, а наборы приносят очки. Когда у вас набралось достаточно очков, можно закончить раунд и рискнуть: если соперники наберут больше, вы останетесь ни с чем."
+  },
+  {
+    id: "ticket-to-ride-europe", loc: "away", name: "Билет на поезд: Европа", orig: "Ticket to Ride: Europe", year: 2005,
+    bgg: 7.5, rank: 180, weight: 1.9, pmin: 2, pmax: 5, tmin: 30, tmax: 60, age: 8,
+    initials: "БП", hue: ["#c03a3a", "#f4ead0"],
+    tags: ["Семейная", "Маршруты", "Сеты", "Железная дорога"],
+    desc: "Классическая семейная игра о строительстве железных дорог по Европе начала XX века. Игроки собирают карты вагонов нужных цветов и выкладывают поезда на маршруты между городами, чтобы выполнить свои тайные задания. В европейской версии есть туннели с риском переплатить, паромы и вокзалы, которые позволяют пользоваться чужими путями."
+  },
+  {
+    id: "7-wonders-duel", loc: "away", name: "7 чудес: Дуэль", orig: "7 Wonders Duel", year: 2015,
+    bgg: 8.1, rank: 24, weight: 2.2, pmin: 2, pmax: 2, tmin: 30, tmax: 30, age: 10,
+    initials: "7Ч", hue: ["#c8903a", "#7aa0c8"],
+    tags: ["Дуэль", "Драфт", "Цивилизация", "Сеты"],
+    desc: "Версия «7 чудес» строго для двоих. Карты выкладываются пирамидой, часть из них лежит рубашкой вверх, и брать можно только открытые. Игроки развивают цивилизации, строят чудеса света, торгуют ресурсами и наращивают армию и науку. Кроме победы по очкам можно выиграть досрочно: военным превосходством или научными открытиями."
+  },
+  {
+    id: "android-netrunner", name: "Android: Netrunner", orig: "Андроид: Нетраннер", year: 2012,
+    bgg: 7.9, rank: 82, weight: 3.4, pmin: 2, pmax: 2, tmin: 45, tmax: 45, age: 14,
+    initials: "AN", hue: ["#1a0a2e", "#e040a0"],
+    tags: ["Дуэль", "Асимметрия", "Киберпанк", "Блеф", "Колодострой"],
+    desc: "Асимметричная карточная дуэль в мире киберпанка. Один игрок — мегакорпорация, которая прячет секретные проекты на серверах и защищает их программами-льдом. Другой — хакер-раннер, который взламывает серверы, чтобы украсть эти проекты. Корпорация выкладывает карты рубашкой вверх и блефует, раннер рискует и тратит ресурсы на каждый забег. У сторон разные колоды и даже разные правила."
+  },
+  {
+    id: "under-falling-skies", name: "Вторжение с небес", orig: "Under Falling Skies", year: 2020,
+    bgg: 7.8, rank: 196, weight: 2.4, pmin: 1, pmax: 1, tmin: 20, tmax: 40, age: 12,
+    initials: "ВН", hue: ["#140a2a", "#9a6ae0"],
+    tags: ["Соло", "Кубики", "Размещение кубиков", "Пришельцы", "Кампания"],
+    desc: "Одиночная игра о защите подземной базы от инопланетного вторжения. Каждый раунд вы бросаете кубики и размещаете их на действия базы: значение кубика определяет и силу действия, и то, насколько спустятся корабли пришельцев в этой колонне. Нужно сбивать корабли, добывать энергию и успеть завершить исследование, прежде чем вражеские корабли уничтожат город. Есть кампания с новыми городами и персонажами."
+  }
+];
+
+// Обложки: оригинальные векторные рисунки, по одному на игру
+const COVERS = {"android-netrunner":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"an-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0a0a1a\"/><stop offset=\"1\" stop-color=\"#1a0a2e\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#an-s)\"/><g stroke=\"#2a3a6a\" stroke-width=\"1.5\"><path d=\"M-150 300 L150 170\"/><path d=\"M-100 300 L150 170\"/><path d=\"M-50 300 L150 170\"/><path d=\"M0 300 L150 170\"/><path d=\"M50 300 L150 170\"/><path d=\"M100 300 L150 170\"/><path d=\"M150 300 L150 170\"/><path d=\"M200 300 L150 170\"/><path d=\"M250 300 L150 170\"/><path d=\"M300 300 L150 170\"/><path d=\"M350 300 L150 170\"/><path d=\"M400 300 L150 170\"/><path d=\"M450 300 L150 170\"/><path d=\"M0 190 H300\"/><path d=\"M0 210 H300\"/><path d=\"M0 236 H300\"/><path d=\"M0 268 H300\"/><\/g><g fill=\"#14142a\" stroke=\"#e040a0\" stroke-width=\"2\"><rect x=\"30\" y=\"80\" width=\"50\" height=\"100\"/><rect x=\"220\" y=\"60\" width=\"50\" height=\"120\"/><rect x=\"125\" y=\"40\" width=\"50\" height=\"130\"/><\/g><g fill=\"#e040a0\" opacity=\".8\"><rect x=\"40\" y=\"100\" width=\"30\" height=\"4\"/><rect x=\"40\" y=\"120\" width=\"30\" height=\"4\"/><rect x=\"40\" y=\"140\" width=\"30\" height=\"4\"/><rect x=\"230\" y=\"80\" width=\"30\" height=\"4\"/><rect x=\"230\" y=\"100\" width=\"30\" height=\"4\"/><rect x=\"230\" y=\"120\" width=\"30\" height=\"4\"/><rect x=\"230\" y=\"140\" width=\"30\" height=\"4\"/><rect x=\"135\" y=\"60\" width=\"30\" height=\"4\"/><rect x=\"135\" y=\"80\" width=\"30\" height=\"4\"/><rect x=\"135\" y=\"100\" width=\"30\" height=\"4\"/><rect x=\"135\" y=\"120\" width=\"30\" height=\"4\"/><rect x=\"135\" y=\"140\" width=\"30\" height=\"4\"/><\/g><g fill=\"none\" stroke=\"#3ae0e8\" stroke-width=\"3\"><path d=\"M150 290 V230 L110 200 V185\"/><path d=\"M150 230 L190 205 V185\"/><\/g><g fill=\"#3ae0e8\"><path d=\"M110 172 l-9 16 h18z\"/><path d=\"M190 172 l-9 16 h18z\"/><\/g><circle cx=\"150\" cy=\"290\" r=\"7\" fill=\"#3ae0e8\"/><g stroke=\"#3ae0e8\" stroke-width=\"2\" opacity=\".6\"><path d=\"M150 170 L120 120 M150 170 L180 110\"/><\/g><g fill=\"#e8e040\" opacity=\".9\"><rect x=\"145\" y=\"22\" width=\"10\" height=\"10\"/><rect x=\"50\" y=\"64\" width=\"10\" height=\"10\"/><rect x=\"240\" y=\"44\" width=\"10\" height=\"10\"/><\/g><\/svg>","under-falling-skies":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"uf-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#140a2a\"/><stop offset=\"1\" stop-color=\"#3a2a6a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#uf-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"193\" cy=\"126\" r=\"1.8\"/><circle cx=\"153\" cy=\"112\" r=\"1.2\"/><circle cx=\"236\" cy=\"7\" r=\"1.8\"/><circle cx=\"140\" cy=\"66\" r=\"1.2\"/><circle cx=\"13\" cy=\"81\" r=\"1.5\"/><circle cx=\"179\" cy=\"176\" r=\"1.2\"/><circle cx=\"166\" cy=\"11\" r=\"1.2\"/><circle cx=\"137\" cy=\"11\" r=\"1.2\"/><circle cx=\"22\" cy=\"124\" r=\"1.8\"/><circle cx=\"159\" cy=\"63\" r=\"1.5\"/><circle cx=\"193\" cy=\"72\" r=\"1.8\"/><circle cx=\"52\" cy=\"95\" r=\"1.8\"/><circle cx=\"224\" cy=\"138\" r=\"1.2\"/><circle cx=\"158\" cy=\"154\" r=\"1\"/><circle cx=\"152\" cy=\"27\" r=\"1\"/><circle cx=\"275\" cy=\"101\" r=\"1.2\"/><circle cx=\"258\" cy=\"45\" r=\"1.5\"/><circle cx=\"163\" cy=\"87\" r=\"1.8\"/><circle cx=\"240\" cy=\"22\" r=\"1.2\"/><circle cx=\"254\" cy=\"192\" r=\"1\"/><circle cx=\"235\" cy=\"131\" r=\"1\"/><circle cx=\"251\" cy=\"184\" r=\"1\"/><\/g><ellipse cx=\"150\" cy=\"22\" rx=\"130\" ry=\"26\" fill=\"#2a1a4a\" stroke=\"#9a6ae0\" stroke-width=\"2\"/><g transform=\"translate(50 70)\"><ellipse rx=\"16\" ry=\"6\" fill=\"#c8ccd8\"/><path d=\"M-8 -2 a8 7 0 0 1 16 0z\" fill=\"#7ae8a0\"/><path d=\"M-6 6 L-12 30 H12 L6 6Z\" fill=\"#7ae8a0\" opacity=\".15\"/><\/g><g transform=\"translate(110 110)\"><ellipse rx=\"16\" ry=\"6\" fill=\"#c8ccd8\"/><path d=\"M-8 -2 a8 7 0 0 1 16 0z\" fill=\"#7ae8a0\"/><path d=\"M-6 6 L-12 30 H12 L6 6Z\" fill=\"#7ae8a0\" opacity=\".15\"/><\/g><g transform=\"translate(170 80)\"><ellipse rx=\"16\" ry=\"6\" fill=\"#c8ccd8\"/><path d=\"M-8 -2 a8 7 0 0 1 16 0z\" fill=\"#7ae8a0\"/><path d=\"M-6 6 L-12 30 H12 L6 6Z\" fill=\"#7ae8a0\" opacity=\".15\"/><\/g><g transform=\"translate(230 130)\"><ellipse rx=\"16\" ry=\"6\" fill=\"#c8ccd8\"/><path d=\"M-8 -2 a8 7 0 0 1 16 0z\" fill=\"#7ae8a0\"/><path d=\"M-6 6 L-12 30 H12 L6 6Z\" fill=\"#7ae8a0\" opacity=\".15\"/><\/g><g transform=\"translate(80 150)\"><ellipse rx=\"16\" ry=\"6\" fill=\"#c8ccd8\"/><path d=\"M-8 -2 a8 7 0 0 1 16 0z\" fill=\"#7ae8a0\"/><path d=\"M-6 6 L-12 30 H12 L6 6Z\" fill=\"#7ae8a0\" opacity=\".15\"/><\/g><g fill=\"#1a1430\"><rect x=\"0\" y=\"220\" width=\"40\" height=\"80\"/><rect x=\"36\" y=\"196\" width=\"30\" height=\"104\"/><rect x=\"66\" y=\"230\" width=\"34\" height=\"70\"/><rect x=\"100\" y=\"206\" width=\"26\" height=\"94\"/><rect x=\"174\" y=\"210\" width=\"30\" height=\"90\"/><rect x=\"204\" y=\"190\" width=\"28\" height=\"110\"/><rect x=\"232\" y=\"226\" width=\"34\" height=\"74\"/><rect x=\"266\" y=\"204\" width=\"34\" height=\"96\"/><\/g><g fill=\"#e8c46a\" opacity=\".8\"><rect x=\"44\" y=\"210\" width=\"4\" height=\"5\"/><rect x=\"52\" y=\"226\" width=\"4\" height=\"5\"/><rect x=\"108\" y=\"220\" width=\"4\" height=\"5\"/><rect x=\"212\" y=\"204\" width=\"4\" height=\"5\"/><rect x=\"220\" y=\"224\" width=\"4\" height=\"5\"/><rect x=\"274\" y=\"218\" width=\"4\" height=\"5\"/><rect x=\"10\" y=\"236\" width=\"4\" height=\"5\"/><rect x=\"184\" y=\"226\" width=\"4\" height=\"5\"/><\/g><path d=\"M126 300 V250 h48 V300Z\" fill=\"#3a3a5a\"/><path d=\"M140 250 L150 230 L160 250Z\" fill=\"#5a5a7a\"/><path d=\"M150 232 L110 112\" stroke=\"#f05a5a\" stroke-width=\"3\"/><circle cx=\"110\" cy=\"112\" r=\"8\" fill=\"#f8a040\" opacity=\".8\"/><g transform=\"translate(240 262)\"><rect x=\"-14\" y=\"-14\" width=\"28\" height=\"28\" rx=\"5\" fill=\"#f4ecd8\"/><g fill=\"#1a1430\"><circle cx=\"-6\" cy=\"-6\" r=\"2.5\"/><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"-6\" r=\"2.5\"/><circle cx=\"-6\" cy=\"6\" r=\"2.5\"/><\/g><\/g><\/svg>","sea-salt-paper":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"ss-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#bfe4f0\"/><stop offset=\"1\" stop-color=\"#5ab0d0\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#ss-s)\"/><circle cx=\"230\" cy=\"60\" r=\"24\" fill=\"#fff6d8\"/><rect y=\"190\" width=\"300\" height=\"110\" fill=\"#2a7aa8\"/><path d=\"M0 190 Q40 180 80 190 T160 190 T240 190 T320 190 V200 H0Z\" fill=\"#3a90b8\"/><g><path d=\"M70 170 H200 L180 196 H90Z\" fill=\"#fbf8f0\" stroke=\"#c8d8e0\" stroke-width=\"2\"/><path d=\"M135 170 V80 L185 160Z\" fill=\"#fbf8f0\" stroke=\"#c8d8e0\" stroke-width=\"2\"/><path d=\"M135 92 L100 160 H135Z\" fill=\"#eef4f6\" stroke=\"#c8d8e0\" stroke-width=\"2\"/><path d=\"M135 80 L185 160 L160 160Z\" fill=\"#e4eef2\"/><\/g><g><path d=\"M60 250 L90 236 L110 250 L90 264Z\" fill=\"#f08a5a\"/><path d=\"M60 250 L46 240 V260Z\" fill=\"#f08a5a\"/><circle cx=\"96\" cy=\"248\" r=\"2\" fill=\"#1a2a3a\"/><\/g><g><path d=\"M200 262 L220 246 L240 262 L220 270Z\" fill=\"#e05a4a\"/><path d=\"M204 256 l-10 -10 l4 12z M236 256 l10 -10 l-4 12z\" fill=\"#e05a4a\"/><\/g><g fill=\"none\" stroke=\"#bfe4f0\" stroke-width=\"2\" opacity=\".7\"><path d=\"M140 240 h30 M30 280 h40 M240 225 h30\"/><\/g><\/svg>","ticket-to-ride-europe":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"tt-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#f4ead0\"/><stop offset=\"1\" stop-color=\"#e8d4a0\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#tt-s)\"/><g fill=\"none\" stroke-width=\"10\" stroke-dasharray=\"20 4\"><path d=\"M40 60 L130 100\" stroke=\"#c03a3a\"/><path d=\"M130 100 L240 70\" stroke=\"#3a6ac0\"/><path d=\"M130 100 L110 190\" stroke=\"#3a9a4a\"/><path d=\"M110 190 L230 200\" stroke=\"#e0b030\"/><path d=\"M240 70 L230 200\" stroke=\"#8a4ab0\"/><path d=\"M40 60 L60 170 L110 190\" stroke=\"#e08a2a\"/><\/g><g fill=\"#f4ead0\" stroke=\"#3a2a1a\" stroke-width=\"4\"><circle cx=\"40\" cy=\"60\" r=\"9\"/><circle cx=\"130\" cy=\"100\" r=\"9\"/><circle cx=\"240\" cy=\"70\" r=\"9\"/><circle cx=\"110\" cy=\"190\" r=\"9\"/><circle cx=\"230\" cy=\"200\" r=\"9\"/><circle cx=\"60\" cy=\"170\" r=\"9\"/><\/g><path d=\"M0 252 H300\" stroke=\"#5a4a3a\" stroke-width=\"4\"/><path d=\"M0 262 H300\" stroke=\"#5a4a3a\" stroke-width=\"4\"/><g fill=\"#5a4a3a\"><rect x=\"4\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"22\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"40\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"58\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"76\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"94\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"112\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"130\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"148\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"166\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"184\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"202\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"220\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"238\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"256\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"274\" y=\"250\" width=\"6\" height=\"16\"/><rect x=\"292\" y=\"250\" width=\"6\" height=\"16\"/><\/g><g><rect x=\"60\" y=\"212\" width=\"70\" height=\"34\" rx=\"4\" fill=\"#c03a3a\"/><rect x=\"130\" y=\"222\" width=\"20\" height=\"24\" fill=\"#c03a3a\"/><rect x=\"70\" y=\"200\" width=\"16\" height=\"14\" fill=\"#3a2a1a\"/><rect x=\"160\" y=\"216\" width=\"56\" height=\"30\" rx=\"4\" fill=\"#3a6ac0\"/><rect x=\"224\" y=\"216\" width=\"56\" height=\"30\" rx=\"4\" fill=\"#3a9a4a\"/><g fill=\"#f4ead0\"><rect x=\"96\" y=\"220\" width=\"12\" height=\"10\"/><rect x=\"112\" y=\"220\" width=\"12\" height=\"10\"/><rect x=\"170\" y=\"222\" width=\"12\" height=\"10\"/><rect x=\"190\" y=\"222\" width=\"12\" height=\"10\"/><rect x=\"234\" y=\"222\" width=\"12\" height=\"10\"/><rect x=\"254\" y=\"222\" width=\"12\" height=\"10\"/><\/g><g fill=\"#1a1a1a\"><circle cx=\"74\" cy=\"248\" r=\"6\"/><circle cx=\"116\" cy=\"248\" r=\"6\"/><circle cx=\"144\" cy=\"248\" r=\"6\"/><circle cx=\"174\" cy=\"248\" r=\"6\"/><circle cx=\"202\" cy=\"248\" r=\"6\"/><circle cx=\"238\" cy=\"248\" r=\"6\"/><circle cx=\"266\" cy=\"248\" r=\"6\"/><\/g><\/g><g fill=\"#fff\" opacity=\".7\"><circle cx=\"78\" cy=\"190\" r=\"8\"/><circle cx=\"66\" cy=\"176\" r=\"10\"/><circle cx=\"52\" cy=\"162\" r=\"8\"/><\/g><\/svg>","7-wonders-duel":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"300\" height=\"300\" fill=\"#f0c870\"/><path d=\"M150 0 H300 V300 H150Z\" fill=\"#7aa0c8\"/><circle cx=\"150\" cy=\"120\" r=\"70\" fill=\"#f8e6b0\"/><path d=\"M20 220 L80 130 L140 220Z\" fill=\"#c8903a\"/><path d=\"M80 130 L140 220 H110Z\" fill=\"#a0702a\"/><g fill=\"#e8eef4\"><path d=\"M166 140 H284 L276 150 H174Z\"/><path d=\"M174 132 L225 104 L276 132Z\"/><rect x=\"180\" y=\"152\" width=\"10\" height=\"62\"/><rect x=\"200\" y=\"152\" width=\"10\" height=\"62\"/><rect x=\"220\" y=\"152\" width=\"10\" height=\"62\"/><rect x=\"240\" y=\"152\" width=\"10\" height=\"62\"/><rect x=\"260\" y=\"152\" width=\"10\" height=\"62\"/><rect x=\"168\" y=\"214\" width=\"114\" height=\"8\"/><\/g><path d=\"M0 222 H300 V300 H0Z\" fill=\"#5a3a22\"/><path d=\"M150 222 H300 V300 H150Z\" fill=\"#2a3a5a\"/><g><circle cx=\"150\" cy=\"250\" r=\"26\" fill=\"#f8e6b0\" stroke=\"#3a2a1a\" stroke-width=\"3\"/><text x=\"150\" y=\"259\" font-size=\"24\" font-weight=\"700\" text-anchor=\"middle\" fill=\"#3a2a1a\" font-family=\"sans-serif\">VS<\/text><\/g><g fill=\"none\" stroke=\"#3a7a3a\" stroke-width=\"4\" stroke-linecap=\"round\"><path d=\"M110 60 Q100 30 125 14\"/><path d=\"M190 60 Q200 30 175 14\"/><\/g><g fill=\"#3a7a3a\"><ellipse cx=\"104\" cy=\"44\" rx=\"6\" ry=\"3\"/><ellipse cx=\"110\" cy=\"30\" rx=\"6\" ry=\"3\"/><ellipse cx=\"118\" cy=\"20\" rx=\"6\" ry=\"3\"/><ellipse cx=\"196\" cy=\"44\" rx=\"6\" ry=\"3\"/><ellipse cx=\"190\" cy=\"30\" rx=\"6\" ry=\"3\"/><ellipse cx=\"182\" cy=\"20\" rx=\"6\" ry=\"3\"/><\/g><\/svg>","forbidden-stars":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"fs-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#12081e\"/><stop offset=\"1\" stop-color=\"#3a0e1e\"/><\/linearGradient><radialGradient id=\"fs-n\" cx=\"0.7\" cy=\"0.3\" r=\"0.5\"><stop offset=\"0\" stop-color=\"#c0304a\" stop-opacity=\"0.7\"/><stop offset=\"1\" stop-color=\"#c0304a\" stop-opacity=\"0\"/><\/radialGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#fs-s)\"/><rect width=\"300\" height=\"300\" fill=\"url(#fs-n)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"76\" cy=\"151\" r=\"1\"/><circle cx=\"138\" cy=\"36\" r=\"1.8\"/><circle cx=\"238\" cy=\"126\" r=\"1.8\"/><circle cx=\"115\" cy=\"30\" r=\"1.8\"/><circle cx=\"22\" cy=\"105\" r=\"1.8\"/><circle cx=\"9\" cy=\"184\" r=\"1.8\"/><circle cx=\"144\" cy=\"190\" r=\"1.2\"/><circle cx=\"60\" cy=\"87\" r=\"1\"/><circle cx=\"19\" cy=\"12\" r=\"2.2\"/><circle cx=\"12\" cy=\"103\" r=\"1.2\"/><circle cx=\"224\" cy=\"191\" r=\"1\"/><circle cx=\"278\" cy=\"62\" r=\"1.8\"/><circle cx=\"261\" cy=\"147\" r=\"1.2\"/><circle cx=\"184\" cy=\"65\" r=\"1.2\"/><circle cx=\"243\" cy=\"80\" r=\"1\"/><circle cx=\"221\" cy=\"148\" r=\"1\"/><circle cx=\"103\" cy=\"167\" r=\"1.5\"/><circle cx=\"69\" cy=\"196\" r=\"1.5\"/><circle cx=\"264\" cy=\"114\" r=\"2.2\"/><circle cx=\"105\" cy=\"83\" r=\"1.5\"/><circle cx=\"263\" cy=\"135\" r=\"1.8\"/><circle cx=\"25\" cy=\"128\" r=\"1.2\"/><circle cx=\"214\" cy=\"112\" r=\"1.2\"/><circle cx=\"195\" cy=\"146\" r=\"1.5\"/><circle cx=\"52\" cy=\"118\" r=\"2.2\"/><circle cx=\"63\" cy=\"47\" r=\"2.2\"/><circle cx=\"209\" cy=\"100\" r=\"1.8\"/><circle cx=\"23\" cy=\"126\" r=\"1\"/><\/g><g fill=\"none\" stroke=\"#8a3ac0\" stroke-width=\"3\" opacity=\".55\"><path d=\"M200 40 C150 60 260 120 190 150\"/><path d=\"M230 30 C180 70 290 110 220 170\"/><\/g><circle cx=\"80\" cy=\"250\" r=\"110\" fill=\"#5a1a2a\"/><path d=\"M-30 250 A110 110 0 0 1 190 250\" fill=\"none\" stroke=\"#c0304a\" stroke-width=\"3\" opacity=\".6\"/><circle cx=\"60\" cy=\"220\" r=\"18\" fill=\"#3a0e1e\" opacity=\".6\"/><circle cx=\"120\" cy=\"270\" r=\"12\" fill=\"#3a0e1e\" opacity=\".6\"/><circle cx=\"230\" cy=\"190\" r=\"22\" fill=\"#d9a03a\"/><circle cx=\"224\" cy=\"184\" r=\"6\" fill=\"#f0c870\"/><g fill=\"#e8e0d0\"><path d=\"M150 110 l30 10 l-30 10 l6 -10z\"/><path d=\"M110 70 l22 7 l-22 7 l4 -7z\"/><path d=\"M190 80 l16 5 l-16 5 l3 -5z\"/><\/g><g stroke=\"#f08a5a\" stroke-width=\"2\" opacity=\".7\"><path d=\"M150 120 h-24\"/><path d=\"M110 77 h-16\"/><\/g><\/svg>","revive":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"rv-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#9ad0e0\"/><stop offset=\"1\" stop-color=\"#e6f4f8\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#rv-s)\"/><circle cx=\"220\" cy=\"70\" r=\"30\" fill=\"#fff5d0\"/><circle cx=\"220\" cy=\"70\" r=\"46\" fill=\"#fff5d0\" opacity=\".3\"/><path d=\"M0 140 L50 100 L90 130 L140 90 L190 135 L240 105 L300 140 V300 H0Z\" fill=\"#c8e2ec\"/><path d=\"M0 180 Q150 150 300 180 V300 H0Z\" fill=\"#f4fafc\"/><g stroke=\"#a8ccd8\" stroke-width=\"2\" fill=\"none\"><path d=\"M30 220 l30 10 l20 -8 l30 14\"/><path d=\"M190 230 l25 -6 l20 12 l35 -4\"/><path d=\"M110 270 l20 -10 l25 6\"/><\/g><path d=\"M150 260 Q148 220 150 190\" stroke=\"#3a8a4a\" stroke-width=\"5\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M150 230 Q125 215 120 195 Q140 200 150 222Z\" fill=\"#5ab05a\"/><path d=\"M150 215 Q175 198 182 178 Q160 185 150 208Z\" fill=\"#5ab05a\"/><g fill=\"#f2c230\"><circle cx=\"150\" cy=\"178\" r=\"8\"/><\/g><g fill=\"#f08a5a\"><circle cx=\"150\" cy=\"166\" r=\"7\"/><circle cx=\"162\" cy=\"176\" r=\"7\"/><circle cx=\"138\" cy=\"176\" r=\"7\"/><circle cx=\"144\" cy=\"188\" r=\"7\"/><circle cx=\"156\" cy=\"188\" r=\"7\"/><\/g><circle cx=\"150\" cy=\"178\" r=\"6\" fill=\"#f2c230\"/><ellipse cx=\"150\" cy=\"262\" rx=\"26\" ry=\"6\" fill=\"#7a5a3a\" opacity=\".5\"/><\/svg>","fief-england":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"fe-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#f2d38a\"/><stop offset=\"1\" stop-color=\"#e8a85a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#fe-s)\"/><path d=\"M0 230 Q80 180 150 200 T300 210 V300 H0Z\" fill=\"#5a8a3a\"/><path d=\"M0 260 Q120 230 300 255 V300 H0Z\" fill=\"#3e6a2a\"/><g fill=\"#6a4a3a\"><rect x=\"95\" y=\"120\" width=\"110\" height=\"85\"/><rect x=\"80\" y=\"95\" width=\"30\" height=\"110\"/><rect x=\"190\" y=\"95\" width=\"30\" height=\"110\"/><rect x=\"132\" y=\"80\" width=\"36\" height=\"125\"/><\/g><g fill=\"#6a4a3a\"><rect x=\"80\" y=\"85\" width=\"8\" height=\"10\"/><rect x=\"92\" y=\"85\" width=\"8\" height=\"10\"/><rect x=\"102\" y=\"85\" width=\"8\" height=\"10\"/><rect x=\"190\" y=\"85\" width=\"8\" height=\"10\"/><rect x=\"202\" y=\"85\" width=\"8\" height=\"10\"/><rect x=\"212\" y=\"85\" width=\"8\" height=\"10\"/><rect x=\"132\" y=\"70\" width=\"8\" height=\"10\"/><rect x=\"146\" y=\"70\" width=\"8\" height=\"10\"/><rect x=\"160\" y=\"70\" width=\"8\" height=\"10\"/><\/g><path d=\"M138 205 V180 A12 12 0 0 1 162 180 V205Z\" fill=\"#2a1a10\"/><g fill=\"#2a1a10\"><rect x=\"90\" y=\"120\" width=\"8\" height=\"12\"/><rect x=\"200\" y=\"120\" width=\"8\" height=\"12\"/><rect x=\"146\" y=\"105\" width=\"8\" height=\"12\"/><\/g><path d=\"M150 80 V40\" stroke=\"#2a1a10\" stroke-width=\"3\"/><path d=\"M150 42 L180 50 L150 58Z\" fill=\"#b0283a\"/><path d=\"M95 95 V70\" stroke=\"#2a1a10\" stroke-width=\"2\"/><path d=\"M95 71 L112 76 L95 81Z\" fill=\"#2a4a8a\"/><path d=\"M205 95 V70\" stroke=\"#2a1a10\" stroke-width=\"2\"/><path d=\"M205 71 L222 76 L205 81Z\" fill=\"#2a4a8a\"/><path d=\"M126 30 L134 14 L142 26 L150 10 L158 26 L166 14 L174 30Z\" fill=\"#d9a020\" opacity=\".9\"/><\/svg>","arcs":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"ar-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#10142e\"/><stop offset=\"1\" stop-color=\"#22183e\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#ar-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"36\" cy=\"29\" r=\"1\"/><circle cx=\"192\" cy=\"49\" r=\"1.5\"/><circle cx=\"136\" cy=\"161\" r=\"1.2\"/><circle cx=\"26\" cy=\"154\" r=\"1.2\"/><circle cx=\"228\" cy=\"169\" r=\"1.8\"/><circle cx=\"268\" cy=\"101\" r=\"2.2\"/><circle cx=\"235\" cy=\"134\" r=\"1.5\"/><circle cx=\"26\" cy=\"13\" r=\"1.5\"/><circle cx=\"246\" cy=\"87\" r=\"1.8\"/><circle cx=\"224\" cy=\"140\" r=\"1.2\"/><circle cx=\"98\" cy=\"66\" r=\"1.2\"/><circle cx=\"20\" cy=\"51\" r=\"1.5\"/><circle cx=\"96\" cy=\"40\" r=\"2.2\"/><circle cx=\"269\" cy=\"98\" r=\"2.2\"/><circle cx=\"101\" cy=\"120\" r=\"1.8\"/><circle cx=\"276\" cy=\"99\" r=\"2.2\"/><circle cx=\"189\" cy=\"98\" r=\"1.8\"/><circle cx=\"90\" cy=\"199\" r=\"1.8\"/><circle cx=\"244\" cy=\"173\" r=\"2.2\"/><circle cx=\"135\" cy=\"131\" r=\"1.5\"/><circle cx=\"263\" cy=\"134\" r=\"2.2\"/><circle cx=\"189\" cy=\"175\" r=\"1.8\"/><circle cx=\"244\" cy=\"95\" r=\"2.2\"/><circle cx=\"241\" cy=\"130\" r=\"1.2\"/><circle cx=\"174\" cy=\"185\" r=\"1.2\"/><circle cx=\"145\" cy=\"128\" r=\"1.5\"/><\/g><g fill=\"none\" stroke-linecap=\"round\"><path d=\"M40 260 A150 150 0 0 1 260 120\" stroke=\"#e0573a\" stroke-width=\"6\"/><path d=\"M70 270 A120 120 0 0 1 250 160\" stroke=\"#f0a040\" stroke-width=\"4\" opacity=\".8\"/><path d=\"M100 280 A90 90 0 0 1 240 200\" stroke=\"#e8d6a0\" stroke-width=\"3\" opacity=\".6\"/><\/g><circle cx=\"80\" cy=\"80\" r=\"34\" fill=\"#3a6ac0\"/><path d=\"M48 80 A32 12 0 0 0 112 80\" fill=\"none\" stroke=\"#9ab8e8\" stroke-width=\"3\"/><circle cx=\"230\" cy=\"250\" r=\"20\" fill=\"#c04a6a\"/><circle cx=\"190\" cy=\"60\" r=\"10\" fill=\"#e8d6a0\"/><g fill=\"#e8e0d0\"><path d=\"M150 150 l20 -6 l-6 20z\"/><path d=\"M200 120 l14 -4 l-4 14z\"/><\/g><\/svg>","sweet-lands":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"sl-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#f9c6d6\"/><stop offset=\"1\" stop-color=\"#fde8d0\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#sl-s)\"/><circle cx=\"60\" cy=\"60\" r=\"22\" fill=\"#fff4f8\"/><circle cx=\"80\" cy=\"54\" r=\"18\" fill=\"#fff4f8\"/><circle cx=\"230\" cy=\"40\" r=\"16\" fill=\"#fff4f8\"/><circle cx=\"246\" cy=\"44\" r=\"12\" fill=\"#fff4f8\"/><g stroke=\"#fff\" stroke-width=\"3\"><path d=\"M40 240 l25 -14 l25 14 v28 l-25 14 l-25 -14z\" fill=\"#8ad0b0\"/><path d=\"M90 240 l25 -14 l25 14 v28 l-25 14 l-25 -14z\" fill=\"#f0a0b8\"/><path d=\"M140 240 l25 -14 l25 14 v28 l-25 14 l-25 -14z\" fill=\"#f6d36a\"/><path d=\"M190 240 l25 -14 l25 14 v28 l-25 14 l-25 -14z\" fill=\"#b8a0e0\"/><path d=\"M240 240 l25 -14 l25 14 v28 l-25 14 l-25 -14z\" fill=\"#8ad0b0\"/><\/g><g><rect x=\"120\" y=\"120\" width=\"60\" height=\"110\" fill=\"#fff4f8\"/><path d=\"M120 140 h60 M120 165 h60 M120 190 h60 M120 215 h60\" stroke=\"#f08aa8\" stroke-width=\"8\"/><path d=\"M112 120 L150 60 L188 120Z\" fill=\"#f08aa8\"/><circle cx=\"150\" cy=\"56\" r=\"8\" fill=\"#f6d36a\"/><path d=\"M80 230 V150\" stroke=\"#fff4f8\" stroke-width=\"16\"/><path d=\"M80 155 V230\" stroke=\"#8ad0b0\" stroke-width=\"16\" stroke-dasharray=\"10 10\"/><path d=\"M66 150 L80 115 L94 150Z\" fill=\"#8ad0b0\"/><path d=\"M220 230 V150\" stroke=\"#fff4f8\" stroke-width=\"16\"/><path d=\"M220 155 V230\" stroke=\"#b8a0e0\" stroke-width=\"16\" stroke-dasharray=\"10 10\"/><path d=\"M206 150 L220 115 L234 150Z\" fill=\"#b8a0e0\"/><\/g><path d=\"M138 230 V205 A12 12 0 0 1 162 205 V230Z\" fill=\"#c05a7a\"/><path d=\"M250 200 V130\" stroke=\"#fff4f8\" stroke-width=\"4\"/><circle cx=\"250\" cy=\"120\" r=\"18\" fill=\"#f6d36a\"/><path d=\"M250 120 m-10 0 a10 10 0 0 1 20 0 a6 6 0 0 1 -12 0\" fill=\"none\" stroke=\"#f08aa8\" stroke-width=\"3\"/><\/svg>","galactic-cruise":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"gc-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0a1a3a\"/><stop offset=\"1\" stop-color=\"#1e4a7a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#gc-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"129\" cy=\"157\" r=\"2.2\"/><circle cx=\"74\" cy=\"100\" r=\"2.2\"/><circle cx=\"250\" cy=\"166\" r=\"2.2\"/><circle cx=\"41\" cy=\"161\" r=\"1\"/><circle cx=\"248\" cy=\"72\" r=\"2.2\"/><circle cx=\"127\" cy=\"55\" r=\"1.8\"/><circle cx=\"284\" cy=\"146\" r=\"1.8\"/><circle cx=\"211\" cy=\"169\" r=\"1.2\"/><circle cx=\"126\" cy=\"168\" r=\"1.2\"/><circle cx=\"275\" cy=\"105\" r=\"1\"/><circle cx=\"40\" cy=\"46\" r=\"2.2\"/><circle cx=\"29\" cy=\"83\" r=\"1\"/><circle cx=\"145\" cy=\"127\" r=\"2.2\"/><circle cx=\"206\" cy=\"188\" r=\"1.8\"/><circle cx=\"210\" cy=\"192\" r=\"2.2\"/><circle cx=\"235\" cy=\"40\" r=\"1.5\"/><circle cx=\"57\" cy=\"15\" r=\"1.2\"/><circle cx=\"261\" cy=\"61\" r=\"1.5\"/><circle cx=\"231\" cy=\"166\" r=\"1.5\"/><circle cx=\"223\" cy=\"135\" r=\"1.8\"/><circle cx=\"187\" cy=\"142\" r=\"2.2\"/><circle cx=\"216\" cy=\"155\" r=\"1.2\"/><circle cx=\"180\" cy=\"180\" r=\"1\"/><circle cx=\"151\" cy=\"161\" r=\"1.2\"/><circle cx=\"175\" cy=\"144\" r=\"2.2\"/><circle cx=\"61\" cy=\"188\" r=\"1.2\"/><circle cx=\"144\" cy=\"78\" r=\"1\"/><circle cx=\"40\" cy=\"129\" r=\"1.8\"/><circle cx=\"53\" cy=\"94\" r=\"1\"/><circle cx=\"218\" cy=\"44\" r=\"1\"/><\/g><circle cx=\"240\" cy=\"230\" r=\"44\" fill=\"#3fb6c9\"/><ellipse cx=\"240\" cy=\"230\" rx=\"74\" ry=\"14\" fill=\"none\" stroke=\"#f0d890\" stroke-width=\"5\" transform=\"rotate(-18 240 230)\"/><path d=\"M30 200 Q120 150 200 120\" stroke=\"#3fb6c9\" stroke-width=\"3\" fill=\"none\" opacity=\".5\" stroke-dasharray=\"6 8\"/><g transform=\"rotate(-24 150 120)\"><path d=\"M70 120 Q90 100 200 104 Q240 108 250 120 Q240 132 200 136 Q90 140 70 120Z\" fill=\"#f4f6f8\"/><path d=\"M70 120 Q90 128 200 132 Q240 130 250 120 Q240 132 200 136 Q90 140 70 120Z\" fill=\"#c8d4e0\"/><path d=\"M150 104 Q170 86 200 94 L210 105Z\" fill=\"#9ad8e8\"/><g fill=\"#3fb6c9\"><circle cx=\"100\" cy=\"118\" r=\"3.2\"/><circle cx=\"116\" cy=\"118\" r=\"3.2\"/><circle cx=\"132\" cy=\"118\" r=\"3.2\"/><circle cx=\"148\" cy=\"118\" r=\"3.2\"/><circle cx=\"164\" cy=\"118\" r=\"3.2\"/><circle cx=\"180\" cy=\"118\" r=\"3.2\"/><circle cx=\"196\" cy=\"118\" r=\"3.2\"/><circle cx=\"212\" cy=\"118\" r=\"3.2\"/><\/g><path d=\"M70 112 L50 108 L56 120 L50 132 L70 128Z\" fill=\"#e0602a\"/><path d=\"M50 114 L20 120 L50 126Z\" fill=\"#ffb347\" opacity=\".9\"/><\/g><\/svg>","fs-forgotten-worlds":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"fw-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0c140a\"/><stop offset=\"1\" stop-color=\"#1e2a14\"/><\/linearGradient><radialGradient id=\"fw-g\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\"><stop offset=\"0\" stop-color=\"#9ad04a\" stop-opacity=\"0.7\"/><stop offset=\"1\" stop-color=\"#9ad04a\" stop-opacity=\"0\"/><\/radialGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#fw-s)\"/><g fill=\"#d8f0b0\" opacity=\"0.8\"><circle cx=\"128\" cy=\"83\" r=\"1\"/><circle cx=\"210\" cy=\"128\" r=\"1.2\"/><circle cx=\"54\" cy=\"23\" r=\"1\"/><circle cx=\"213\" cy=\"146\" r=\"1.5\"/><circle cx=\"38\" cy=\"62\" r=\"2.2\"/><circle cx=\"282\" cy=\"98\" r=\"1.5\"/><circle cx=\"96\" cy=\"33\" r=\"1.5\"/><circle cx=\"117\" cy=\"12\" r=\"1.5\"/><circle cx=\"147\" cy=\"55\" r=\"1.2\"/><circle cx=\"166\" cy=\"80\" r=\"1.5\"/><circle cx=\"52\" cy=\"161\" r=\"1.5\"/><circle cx=\"206\" cy=\"135\" r=\"1.2\"/><circle cx=\"99\" cy=\"69\" r=\"1.8\"/><circle cx=\"151\" cy=\"28\" r=\"2.2\"/><circle cx=\"161\" cy=\"7\" r=\"1.5\"/><circle cx=\"167\" cy=\"136\" r=\"1.2\"/><circle cx=\"219\" cy=\"114\" r=\"2.2\"/><circle cx=\"155\" cy=\"116\" r=\"1.8\"/><circle cx=\"90\" cy=\"65\" r=\"1.5\"/><circle cx=\"140\" cy=\"17\" r=\"1\"/><circle cx=\"31\" cy=\"124\" r=\"1.5\"/><circle cx=\"273\" cy=\"142\" r=\"1.8\"/><\/g><circle cx=\"150\" cy=\"150\" r=\"120\" fill=\"url(#fw-g)\"/><path d=\"M150 70 L200 90 L215 140 L170 150 L140 110Z\" fill=\"#4a5a2a\"/><path d=\"M120 120 L160 160 L150 215 L100 205 L85 155Z\" fill=\"#3a4a20\"/><path d=\"M180 165 L225 160 L230 205 L195 220 L170 200Z\" fill=\"#5a6a30\"/><path d=\"M90 95 L120 85 L118 110 L95 115Z\" fill=\"#5a6a30\"/><g stroke=\"#c8f070\" stroke-width=\"2\" fill=\"none\" opacity=\".8\"><path d=\"M140 110 L160 160 L170 150\"/><path d=\"M160 160 L180 165\"/><\/g><g fill=\"#7a8a40\"><circle cx=\"60\" cy=\"230\" r=\"6\"/><circle cx=\"245\" cy=\"80\" r=\"5\"/><circle cx=\"250\" cy=\"250\" r=\"8\"/><\/g><\/svg>","arcs-blighted-reach":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"ab-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1a0e26\"/><stop offset=\"1\" stop-color=\"#2a1a3a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#ab-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"138\" cy=\"195\" r=\"1.5\"/><circle cx=\"279\" cy=\"13\" r=\"1.8\"/><circle cx=\"135\" cy=\"172\" r=\"1\"/><circle cx=\"88\" cy=\"34\" r=\"1.5\"/><circle cx=\"248\" cy=\"69\" r=\"1.8\"/><circle cx=\"286\" cy=\"32\" r=\"2.2\"/><circle cx=\"135\" cy=\"9\" r=\"1.2\"/><circle cx=\"216\" cy=\"77\" r=\"1.2\"/><circle cx=\"207\" cy=\"46\" r=\"1\"/><circle cx=\"79\" cy=\"164\" r=\"2.2\"/><circle cx=\"235\" cy=\"38\" r=\"1.2\"/><circle cx=\"8\" cy=\"7\" r=\"1.2\"/><circle cx=\"118\" cy=\"48\" r=\"1.2\"/><circle cx=\"156\" cy=\"86\" r=\"1.2\"/><circle cx=\"284\" cy=\"179\" r=\"1.2\"/><circle cx=\"101\" cy=\"182\" r=\"1.2\"/><circle cx=\"204\" cy=\"82\" r=\"1\"/><circle cx=\"192\" cy=\"112\" r=\"1.2\"/><circle cx=\"82\" cy=\"73\" r=\"1\"/><circle cx=\"177\" cy=\"83\" r=\"2.2\"/><circle cx=\"9\" cy=\"158\" r=\"1.5\"/><circle cx=\"41\" cy=\"85\" r=\"1.5\"/><\/g><circle cx=\"150\" cy=\"170\" r=\"80\" fill=\"#4a3a6a\"/><g fill=\"none\" stroke=\"#9bbf3a\" stroke-width=\"7\" stroke-linecap=\"round\"><path d=\"M100 120 C130 150 110 190 150 210\"/><path d=\"M200 130 C170 160 200 200 170 240\"/><path d=\"M140 95 C150 130 180 140 190 170\"/><\/g><g fill=\"#9bbf3a\"><circle cx=\"100\" cy=\"120\" r=\"8\"/><circle cx=\"200\" cy=\"130\" r=\"7\"/><circle cx=\"140\" cy=\"95\" r=\"6\"/><\/g><path d=\"M30 270 A150 150 0 0 1 270 270\" fill=\"none\" stroke=\"#e0573a\" stroke-width=\"4\" opacity=\".7\"/><g fill=\"#e8e0d0\"><path d=\"M240 60 l18 -5 l-5 18z\"/><path d=\"M60 70 l14 -4 l-4 14z\"/><\/g><\/svg>","tainted-grail":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"tg-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0e1a16\"/><stop offset=\"1\" stop-color=\"#24382c\"/><\/linearGradient><radialGradient id=\"tg-g\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\"><stop offset=\"0\" stop-color=\"#7ad0e8\" stop-opacity=\"0.8\"/><stop offset=\"1\" stop-color=\"#7ad0e8\" stop-opacity=\"0\"/><\/radialGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#tg-s)\"/><circle cx=\"150\" cy=\"140\" r=\"90\" fill=\"url(#tg-g)\"/><g fill=\"#0a120e\"><path d=\"M0 300 V120 L20 60 L40 120 V300Z\"/><path d=\"M40 300 V150 L60 90 L80 150 V300Z\"/><path d=\"M220 300 V140 L240 80 L260 140 V300Z\"/><path d=\"M260 300 V110 L280 50 L300 110 V300Z\"/><\/g><path d=\"M125 250 L130 100 Q150 80 170 100 L175 250Z\" fill=\"#3a4a44\"/><g stroke=\"#9ae8f8\" stroke-width=\"3\" fill=\"none\"><path d=\"M140 130 l20 0 M150 120 v40 M140 175 q10 -10 20 0\"/><\/g><path d=\"M0 250 Q75 235 150 250 T300 245 V300 H0Z\" fill=\"#162620\"/><g fill=\"#e8f0f0\" opacity=\".2\"><ellipse cx=\"80\" cy=\"240\" rx=\"90\" ry=\"10\"/><ellipse cx=\"230\" cy=\"255\" rx=\"80\" ry=\"8\"/><\/g><\/svg>","tg-age-of-legends-last-knight":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"tl-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#f0c870\"/><stop offset=\"1\" stop-color=\"#c9802a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#tl-s)\"/><circle cx=\"150\" cy=\"110\" r=\"70\" fill=\"#f8e0a0\"/><path d=\"M0 240 Q150 215 300 240 V300 H0Z\" fill=\"#5a3a1a\"/><path d=\"M95 245 L110 205 H190 L205 245Z\" fill=\"#7a7068\"/><path d=\"M110 205 L118 190 H182 L190 205Z\" fill=\"#9a9088\"/><rect x=\"146\" y=\"80\" width=\"8\" height=\"120\" fill=\"#e8e8f0\"/><path d=\"M146 200 L150 212 L154 200Z\" fill=\"#e8e8f0\"/><rect x=\"124\" y=\"76\" width=\"52\" height=\"8\" rx=\"3\" fill=\"#5a3a1a\"/><rect x=\"146\" y=\"44\" width=\"8\" height=\"34\" fill=\"#7a4a2a\"/><circle cx=\"150\" cy=\"42\" r=\"7\" fill=\"#d9a020\"/><g stroke=\"#fff6d8\" stroke-width=\"2\" opacity=\".7\"><path d=\"M150 20 V8 M110 40 l-8 -8 M190 40 l8 -8 M95 80 h-12 M205 80 h12\"/><\/g><\/svg>","tg-red-death":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"tr-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1a0608\"/><stop offset=\"1\" stop-color=\"#4a1014\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#tr-s)\"/><circle cx=\"190\" cy=\"100\" r=\"54\" fill=\"#c0392b\"/><circle cx=\"190\" cy=\"100\" r=\"80\" fill=\"#c0392b\" opacity=\".2\"/><path d=\"M0 250 Q150 230 300 250 V300 H0Z\" fill=\"#0e0406\"/><g stroke=\"#0e0406\" stroke-linecap=\"round\" fill=\"none\"><path d=\"M110 260 C112 200 100 170 112 130\" stroke-width=\"12\"/><path d=\"M110 180 C90 160 70 160 55 140\" stroke-width=\"6\"/><path d=\"M108 150 C130 130 150 128 165 110\" stroke-width=\"6\"/><path d=\"M112 132 C105 110 108 90 96 70\" stroke-width=\"5\"/><path d=\"M60 145 l-12 -16 M150 120 l10 -18 M100 80 l-12 -10\" stroke-width=\"3\"/><\/g><g fill=\"#e8a0a0\" opacity=\".15\"><ellipse cx=\"150\" cy=\"245\" rx=\"160\" ry=\"14\"/><\/g><\/svg>","kings-of-ruin":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"kr-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#140a24\"/><stop offset=\"1\" stop-color=\"#3a2a5a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#kr-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"49\" cy=\"130\" r=\"1.5\"/><circle cx=\"26\" cy=\"6\" r=\"1.2\"/><circle cx=\"248\" cy=\"200\" r=\"1.5\"/><circle cx=\"171\" cy=\"11\" r=\"1.5\"/><circle cx=\"258\" cy=\"56\" r=\"1.8\"/><circle cx=\"283\" cy=\"144\" r=\"1\"/><circle cx=\"106\" cy=\"150\" r=\"2.2\"/><circle cx=\"143\" cy=\"175\" r=\"2.2\"/><circle cx=\"53\" cy=\"114\" r=\"1.5\"/><circle cx=\"55\" cy=\"98\" r=\"1.8\"/><circle cx=\"136\" cy=\"119\" r=\"1\"/><circle cx=\"108\" cy=\"185\" r=\"1.5\"/><circle cx=\"57\" cy=\"17\" r=\"2.2\"/><circle cx=\"110\" cy=\"173\" r=\"1.5\"/><circle cx=\"257\" cy=\"55\" r=\"2.2\"/><circle cx=\"265\" cy=\"13\" r=\"1.5\"/><circle cx=\"133\" cy=\"160\" r=\"1.8\"/><circle cx=\"163\" cy=\"97\" r=\"2.2\"/><\/g><g fill=\"#0e0818\"><path d=\"M20 300 V180 h14 v-10 h10 v10 h10 v-10 h10 v10 h14 V300Z\"/><path d=\"M110 300 V140 l10 -10 h40 l10 10 L175 165 L160 175 L172 190 V300Z\"/><path d=\"M220 300 V170 h12 v-10 h10 v10 h10 v-10 h10 v10 h16 V300Z\"/><\/g><g fill=\"#7d5bb5\" opacity=\".9\"><path d=\"M40 120 L48 100 L56 114 L64 96 L72 114 L80 100 L88 120Z\"/><path d=\"M120 90 L130 64 L140 82 L150 58 L160 82 L170 64 L180 90Z\"/><path d=\"M212 120 L220 100 L228 114 L236 96 L244 114 L252 100 L260 120Z\"/><\/g><g stroke=\"#140a24\" stroke-width=\"3\"><path d=\"M150 58 L144 90\"/><path d=\"M64 96 L70 120\"/><path d=\"M236 96 L230 120\"/><\/g><\/svg>","eleven":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"300\" height=\"300\" fill=\"#2a7a3a\"/><rect x=\"0\" y=\"0\" width=\"300\" height=\"30\" fill=\"#2f8a42\"/><rect x=\"0\" y=\"60\" width=\"300\" height=\"30\" fill=\"#2f8a42\"/><rect x=\"0\" y=\"120\" width=\"300\" height=\"30\" fill=\"#2f8a42\"/><rect x=\"0\" y=\"180\" width=\"300\" height=\"30\" fill=\"#2f8a42\"/><rect x=\"0\" y=\"240\" width=\"300\" height=\"30\" fill=\"#2f8a42\"/><g fill=\"none\" stroke=\"#e8f4e8\" stroke-width=\"4\"><rect x=\"20\" y=\"20\" width=\"260\" height=\"260\"/><path d=\"M20 150 H280\"/><circle cx=\"150\" cy=\"150\" r=\"40\"/><rect x=\"95\" y=\"20\" width=\"110\" height=\"50\"/><rect x=\"95\" y=\"230\" width=\"110\" height=\"50\"/><\/g><circle cx=\"150\" cy=\"150\" r=\"4\" fill=\"#e8f4e8\"/><circle cx=\"190\" cy=\"190\" r=\"18\" fill=\"#fff\"/><path d=\"M190 180 l8 6 l-3 9 h-10 l-3 -9z\" fill=\"#1a1a1a\"/><g fill=\"#fff6c8\"><circle cx=\"10\" cy=\"10\" r=\"12\"/><circle cx=\"290\" cy=\"10\" r=\"12\"/><\/g><g fill=\"#fff6c8\" opacity=\".25\"><path d=\"M10 10 L120 120 L80 140Z\"/><path d=\"M290 10 L180 120 L220 140Z\"/><\/g><\/svg>","ascension":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"as-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0e1a3e\"/><stop offset=\"1\" stop-color=\"#22306a\"/><\/linearGradient><radialGradient id=\"as-g\" cx=\"0.5\" cy=\"0.5\" r=\"0.5\"><stop offset=\"0\" stop-color=\"#e0b84a\" stop-opacity=\"0.9\"/><stop offset=\"1\" stop-color=\"#e0b84a\" stop-opacity=\"0\"/><\/radialGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#as-s)\"/><circle cx=\"150\" cy=\"150\" r=\"120\" fill=\"url(#as-g)\" opacity=\".5\"/><g stroke=\"#e0b84a\" stroke-width=\"2\" opacity=\".4\"><path d=\"M150 150 L290 150\"/><path d=\"M150 150 L271 220\"/><path d=\"M150 150 L220 271\"/><path d=\"M150 150 L150 290\"/><path d=\"M150 150 L80 271\"/><path d=\"M150 150 L29 220\"/><path d=\"M150 150 L10 150\"/><path d=\"M150 150 L29 80\"/><path d=\"M150 150 L80 29\"/><path d=\"M150 150 L150 10\"/><path d=\"M150 150 L220 29\"/><path d=\"M150 150 L271 80\"/><\/g><circle cx=\"150\" cy=\"150\" r=\"60\" fill=\"none\" stroke=\"#e0b84a\" stroke-width=\"6\"/><circle cx=\"150\" cy=\"150\" r=\"44\" fill=\"#122a5a\" stroke=\"#f0d890\" stroke-width=\"2\"/><path d=\"M150 118 L170 150 L150 182 L130 150Z\" fill=\"#9ad8f8\"/><path d=\"M150 118 L170 150 L150 150Z\" fill=\"#d8f0ff\"/><g fill=\"#9ad8f8\"><path d=\"M60 80 l10 -18 l10 18 l-10 18z\"/><path d=\"M230 220 l8 -14 l8 14 l-8 14z\"/><path d=\"M240 70 l6 -10 l6 10 l-6 10z\"/><path d=\"M50 230 l6 -10 l6 10 l-6 10z\"/><\/g><\/svg>","frostpunk":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><radialGradient id=\"f-glow\" cx=\"0.5\" cy=\"0.55\" r=\"0.5\"><stop offset=\"0\" stop-color=\"#ffb347\" stop-opacity=\".85\"/><stop offset=\".45\" stop-color=\"#e0602a\" stop-opacity=\".35\"/><stop offset=\"1\" stop-color=\"#e0602a\" stop-opacity=\"0\"/><\/radialGradient><linearGradient id=\"f-sky\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0d1626\"/><stop offset=\"1\" stop-color=\"#26364d\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#f-sky)\"/><circle cx=\"150\" cy=\"170\" r=\"150\" fill=\"url(#f-glow)\"/><ellipse cx=\"150\" cy=\"250\" rx=\"170\" ry=\"70\" fill=\"#dfe8f0\"/><ellipse cx=\"150\" cy=\"232\" rx=\"120\" ry=\"36\" fill=\"none\" stroke=\"#b9c7d4\" stroke-width=\"3\"/><ellipse cx=\"150\" cy=\"232\" rx=\"78\" ry=\"22\" fill=\"none\" stroke=\"#b9c7d4\" stroke-width=\"3\"/><path d=\"M128 230 L134 92 H166 L172 230Z\" fill=\"#1a2433\"/><rect x=\"138\" y=\"70\" width=\"24\" height=\"26\" fill=\"#1a2433\"/><path d=\"M134 70 H166 L162 62 H138Z\" fill=\"#2c3a4f\"/><rect x=\"140\" y=\"140\" width=\"20\" height=\"56\" rx=\"3\" fill=\"#ffb347\"/><rect x=\"145\" y=\"148\" width=\"10\" height=\"40\" rx=\"2\" fill=\"#fff1c9\"/><path d=\"M150 62 C142 48 158 40 148 24\" stroke=\"#5a6a80\" stroke-width=\"5\" fill=\"none\" stroke-linecap=\"round\" opacity=\".7\"/><g fill=\"#1a2433\"><path d=\"M60 236 l10-10 l10 10 v10 h-20z\"/><path d=\"M90 252 l10-10 l10 10 v10 h-20z\"/><path d=\"M220 236 l10-10 l10 10 v10 h-20z\"/><path d=\"M190 252 l10-10 l10 10 v10 h-20z\"/><path d=\"M40 260 l9-9 l9 9 v9 h-18z\"/><path d=\"M242 260 l9-9 l9 9 v9 h-18z\"/><\/g><g fill=\"#ffb347\"><rect x=\"67\" y=\"238\" width=\"6\" height=\"5\"/><rect x=\"97\" y=\"254\" width=\"6\" height=\"5\"/><rect x=\"227\" y=\"238\" width=\"6\" height=\"5\"/><rect x=\"197\" y=\"254\" width=\"6\" height=\"5\"/><\/g><g fill=\"#ffffff\" opacity=\".85\"><circle cx=\"40\" cy=\"40\" r=\"2\"/><circle cx=\"85\" cy=\"70\" r=\"1.6\"/><circle cx=\"250\" cy=\"50\" r=\"2.2\"/><circle cx=\"210\" cy=\"95\" r=\"1.6\"/><circle cx=\"30\" cy=\"130\" r=\"1.8\"/><circle cx=\"275\" cy=\"140\" r=\"1.8\"/><circle cx=\"110\" cy=\"30\" r=\"1.4\"/><circle cx=\"190\" cy=\"25\" r=\"1.8\"/><circle cx=\"60\" cy=\"180\" r=\"1.5\"/><circle cx=\"245\" cy=\"190\" r=\"1.5\"/><\/g><\/svg>","barrage":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"b-sky\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#f4c58a\"/><stop offset=\"1\" stop-color=\"#e88a5a\"/><\/linearGradient><linearGradient id=\"b-water\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#3f86a8\"/><stop offset=\"1\" stop-color=\"#1f5470\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#b-sky)\"/><circle cx=\"220\" cy=\"78\" r=\"26\" fill=\"#fbe3b8\"/><path d=\"M0 150 L60 70 L110 125 L150 60 L200 120 L250 75 L300 130 V300 H0Z\" fill=\"#7a5a78\"/><path d=\"M0 175 L45 120 L95 165 L118 140 V300 H0Z\" fill=\"#3e3550\"/><path d=\"M300 175 L255 115 L205 170 L182 140 V300 H300Z\" fill=\"#3e3550\"/><path d=\"M96 168 L118 138 L182 138 L204 168Z\" fill=\"url(#b-water)\"/><path d=\"M110 150 H190\" stroke=\"#8fc3da\" stroke-width=\"2\" opacity=\".6\"/><path d=\"M96 166 H204 L182 240 H118Z\" fill=\"#c9c2b6\"/><path d=\"M96 164 H204 V174 H96Z\" fill=\"#e8e2d6\"/><g fill=\"#a39b8e\"><rect x=\"108\" y=\"188\" width=\"84\" height=\"3\"/><rect x=\"113\" y=\"206\" width=\"74\" height=\"3\"/><rect x=\"118\" y=\"224\" width=\"64\" height=\"3\"/><\/g><path d=\"M140 240 H160 L168 300 H132Z\" fill=\"#9fd3e6\"/><g stroke=\"#e6f6fb\" stroke-width=\"3\" stroke-linecap=\"round\"><path d=\"M145 244 V262\"/><path d=\"M152 250 V276\"/><path d=\"M158 244 V266\"/><\/g><path d=\"M0 270 Q75 255 132 280 V300 H0Z\" fill=\"#2a2440\"/><path d=\"M300 270 Q225 255 168 280 V300 H300Z\" fill=\"#2a2440\"/><rect x=\"196\" y=\"252\" width=\"34\" height=\"20\" fill=\"#e88a5a\"/><rect x=\"204\" y=\"236\" width=\"6\" height=\"18\" fill=\"#e88a5a\"/><\/svg>","speakeasy":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"300\" height=\"300\" fill=\"#24121a\"/><g fill=\"#c8a03a\" opacity=\".22\"><path d=\"M150 210 L0 0 H40Z\"/><path d=\"M150 210 L80 0 H120Z\"/><path d=\"M150 210 L170 0 H210Z\"/><path d=\"M150 210 L250 0 H290Z\"/><path d=\"M150 210 L300 60 V100Z\"/><path d=\"M150 210 L0 70 V110Z\"/><\/g><circle cx=\"150\" cy=\"210\" r=\"70\" fill=\"none\" stroke=\"#c8a03a\" stroke-width=\"2\" opacity=\".6\"/><g fill=\"#140a10\"><rect x=\"0\" y=\"170\" width=\"38\" height=\"130\"/><rect x=\"34\" y=\"140\" width=\"30\" height=\"160\"/><path d=\"M64 300 V120 L78 96 L92 120 V300Z\"/><rect x=\"92\" y=\"180\" width=\"26\" height=\"120\"/><rect x=\"182\" y=\"168\" width=\"28\" height=\"132\"/><path d=\"M210 300 V110 L222 80 L234 110 V300Z\"/><rect x=\"234\" y=\"150\" width=\"34\" height=\"150\"/><rect x=\"266\" y=\"185\" width=\"34\" height=\"115\"/><\/g><g fill=\"#e8c46a\" opacity=\".8\"><rect x=\"40\" y=\"152\" width=\"4\" height=\"5\"/><rect x=\"52\" y=\"168\" width=\"4\" height=\"5\"/><rect x=\"72\" y=\"134\" width=\"4\" height=\"5\"/><rect x=\"216\" y=\"124\" width=\"4\" height=\"5\"/><rect x=\"242\" y=\"164\" width=\"4\" height=\"5\"/><rect x=\"254\" y=\"182\" width=\"4\" height=\"5\"/><rect x=\"10\" y=\"190\" width=\"4\" height=\"5\"/><rect x=\"190\" y=\"186\" width=\"4\" height=\"5\"/><\/g><path d=\"M112 150 H188 L150 205Z\" fill=\"none\" stroke=\"#e8c46a\" stroke-width=\"5\" stroke-linejoin=\"round\"/><path d=\"M122 162 H178 L150 200Z\" fill=\"#a8243a\"/><path d=\"M150 205 V262\" stroke=\"#e8c46a\" stroke-width=\"5\"/><path d=\"M124 266 H176\" stroke=\"#e8c46a\" stroke-width=\"6\" stroke-linecap=\"round\"/><circle cx=\"170\" cy=\"156\" r=\"7\" fill=\"#7a9a3a\" stroke=\"#e8c46a\" stroke-width=\"2\"/><path d=\"M18 24 H282 M18 276 H282\" stroke=\"#c8a03a\" stroke-width=\"2\"/><path d=\"M18 30 H282 M18 270 H282\" stroke=\"#c8a03a\" stroke-width=\"1\" opacity=\".6\"/><\/svg>","root":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"300\" height=\"300\" fill=\"#f0c27a\"/><circle cx=\"150\" cy=\"110\" r=\"105\" fill=\"#e09a3e\"/><g fill=\"#c4572b\"><circle cx=\"95\" cy=\"90\" r=\"48\"/><circle cx=\"205\" cy=\"85\" r=\"52\"/><circle cx=\"150\" cy=\"60\" r=\"55\"/><circle cx=\"120\" cy=\"130\" r=\"40\"/><circle cx=\"185\" cy=\"135\" r=\"42\"/><\/g><g fill=\"#9e3a22\"><circle cx=\"70\" cy=\"110\" r=\"26\"/><circle cx=\"232\" cy=\"118\" r=\"28\"/><circle cx=\"150\" cy=\"150\" r=\"30\"/><\/g><path d=\"M138 300 V170 C138 155 132 145 124 138 L132 132 C140 140 146 150 148 160 C150 148 156 138 166 130 L174 136 C165 145 162 156 162 170 V300Z\" fill=\"#4a2a18\"/><path d=\"M0 236 Q150 220 300 236 V300 H0Z\" fill=\"#6b4a2a\"/><path d=\"M138 240 C120 250 90 252 60 266 M162 240 C180 250 210 252 240 266 M146 248 C140 268 120 282 100 300 M154 248 C160 268 180 282 200 300\" stroke=\"#4a2a18\" stroke-width=\"7\" fill=\"none\" stroke-linecap=\"round\"/><path d=\"M134 300 V276 A16 16 0 0 1 166 276 V300Z\" fill=\"#2a160c\"/><circle cx=\"160\" cy=\"288\" r=\"2\" fill=\"#e09a3e\"/><g fill=\"#c4572b\"><path d=\"M40 200 q8 -10 16 0 q-8 10 -16 0z\"/><path d=\"M250 190 q8 -10 16 0 q-8 10 -16 0z\"/><path d=\"M220 220 q6 -8 12 0 q-6 8 -12 0z\"/><path d=\"M70 222 q6 -8 12 0 q-6 8 -12 0z\"/><\/g><\/svg>","dune-imperium":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"d-sky\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#3a1e2e\"/><stop offset=\".6\" stop-color=\"#c0603a\"/><stop offset=\"1\" stop-color=\"#f0a85a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#d-sky)\"/><circle cx=\"210\" cy=\"80\" r=\"46\" fill=\"#f4dcb8\"/><circle cx=\"196\" cy=\"70\" r=\"8\" fill=\"#e4c49a\"/><circle cx=\"224\" cy=\"96\" r=\"6\" fill=\"#e4c49a\"/><circle cx=\"96\" cy=\"58\" r=\"16\" fill=\"#f4dcb8\" opacity=\".85\"/><g fill=\"#fff\" opacity=\".7\"><circle cx=\"40\" cy=\"30\" r=\"1.4\"/><circle cx=\"140\" cy=\"24\" r=\"1.2\"/><circle cx=\"270\" cy=\"160\" r=\"1.2\"/><circle cx=\"30\" cy=\"110\" r=\"1.2\"/><\/g><path d=\"M0 190 Q60 160 120 180 T240 170 T300 175 V300 H0Z\" fill=\"#d9884a\"/><path d=\"M0 220 Q80 190 160 215 T300 205 V300 H0Z\" fill=\"#b8682e\"/><path d=\"M0 255 Q90 225 190 250 T300 245 V300 H0Z\" fill=\"#8a4a22\"/><path d=\"M0 220 Q80 190 160 215\" stroke=\"#e8a868\" stroke-width=\"2\" fill=\"none\" opacity=\".6\"/><g fill=\"#f0c070\"><circle cx=\"70\" cy=\"240\" r=\"1.6\"/><circle cx=\"90\" cy=\"232\" r=\"1.2\"/><circle cx=\"210\" cy=\"262\" r=\"1.6\"/><circle cx=\"230\" cy=\"255\" r=\"1.2\"/><circle cx=\"150\" cy=\"270\" r=\"1.4\"/><\/g><g fill=\"#2a1414\"><rect x=\"58\" y=\"226\" width=\"3\" height=\"16\"/><rect x=\"66\" y=\"230\" width=\"3\" height=\"12\"/><rect x=\"74\" y=\"224\" width=\"3\" height=\"18\"/><\/g><\/svg>","pest":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"pe-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2b2618\"/><stop offset=\"1\" stop-color=\"#5a4a2a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#pe-s)\"/><circle cx=\"220\" cy=\"80\" r=\"34\" fill=\"#d8c8a0\" opacity=\".85\"/><g fill=\"#1a160e\"><path d=\"M0 300 V200 L30 170 L60 200 V300Z\"/><path d=\"M55 300 V180 L95 140 L135 180 V300Z\"/><path d=\"M130 300 V210 L160 180 L190 210 V300Z\"/><path d=\"M185 300 V170 L225 130 L265 170 V300Z\"/><path d=\"M260 300 V195 L285 170 L310 195 V300Z\"/><rect x=\"88\" y=\"110\" width=\"14\" height=\"40\"/><path d=\"M84 112 L95 90 L106 112Z\"/><\/g><g fill=\"#e0b84a\" opacity=\".85\"><rect x=\"80\" y=\"200\" width=\"10\" height=\"12\"/><rect x=\"215\" y=\"190\" width=\"10\" height=\"12\"/><rect x=\"20\" y=\"220\" width=\"8\" height=\"10\"/><\/g><g stroke=\"#a33a2a\" stroke-width=\"5\"><path d=\"M160 230 v26 M147 243 h26\"/><\/g><g fill=\"#1a160e\"><path d=\"M60 70 q10 -8 20 0 q10 -8 20 0 q-10 -2 -20 6 q-10 -8 -20 -6z\"/><path d=\"M130 50 q7 -6 14 0 q7 -6 14 0 q-7 -1 -14 4 q-7 -5 -14 -4z\"/><path d=\"M170 100 q6 -5 12 0 q6 -5 12 0 q-6 -1 -12 4 q-6 -5 -12 -4z\"/><\/g><\/svg>","rallyman-gt":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"300\" height=\"300\" fill=\"#4a8a3a\"/><path d=\"M-20 250 C80 250 90 120 160 110 S280 150 320 60\" stroke=\"#3a3a40\" stroke-width=\"80\" fill=\"none\"/><path d=\"M-20 250 C80 250 90 120 160 110 S280 150 320 60\" stroke=\"#fff\" stroke-width=\"3\" fill=\"none\" stroke-dasharray=\"14 14\" opacity=\".8\"/><path d=\"M-20 290 C90 290 120 160 165 152 S290 190 330 100\" stroke=\"#e8e8e8\" stroke-width=\"8\" fill=\"none\"/><path d=\"M-20 290 C90 290 120 160 165 152 S290 190 330 100\" stroke=\"#d02a2a\" stroke-width=\"8\" fill=\"none\" stroke-dasharray=\"12 12\"/><g transform=\"translate(150 108) rotate(-8)\"><rect x=\"-26\" y=\"-13\" width=\"52\" height=\"26\" rx=\"9\" fill=\"#e8c21e\"/><rect x=\"-6\" y=\"-10\" width=\"16\" height=\"20\" rx=\"4\" fill=\"#1a2a3a\"/><rect x=\"-24\" y=\"-17\" width=\"10\" height=\"5\" rx=\"2\" fill=\"#111\"/><rect x=\"12\" y=\"-17\" width=\"10\" height=\"5\" rx=\"2\" fill=\"#111\"/><rect x=\"-24\" y=\"12\" width=\"10\" height=\"5\" rx=\"2\" fill=\"#111\"/><rect x=\"12\" y=\"12\" width=\"10\" height=\"5\" rx=\"2\" fill=\"#111\"/><rect x=\"-26\" y=\"-3\" width=\"52\" height=\"6\" fill=\"#101a2b\"/><\/g><g><rect x=\"230\" y=\"220\" width=\"14\" height=\"14\" fill=\"#fff\"/><rect x=\"244\" y=\"220\" width=\"14\" height=\"14\" fill=\"#111\"/><rect x=\"258\" y=\"220\" width=\"14\" height=\"14\" fill=\"#fff\"/><rect x=\"272\" y=\"220\" width=\"14\" height=\"14\" fill=\"#111\"/><rect x=\"230\" y=\"234\" width=\"14\" height=\"14\" fill=\"#111\"/><rect x=\"244\" y=\"234\" width=\"14\" height=\"14\" fill=\"#fff\"/><rect x=\"258\" y=\"234\" width=\"14\" height=\"14\" fill=\"#111\"/><rect x=\"272\" y=\"234\" width=\"14\" height=\"14\" fill=\"#fff\"/><rect x=\"230\" y=\"248\" width=\"14\" height=\"14\" fill=\"#fff\"/><rect x=\"244\" y=\"248\" width=\"14\" height=\"14\" fill=\"#111\"/><rect x=\"258\" y=\"248\" width=\"14\" height=\"14\" fill=\"#fff\"/><rect x=\"272\" y=\"248\" width=\"14\" height=\"14\" fill=\"#111\"/><rect x=\"230\" y=\"262\" width=\"14\" height=\"14\" fill=\"#111\"/><rect x=\"244\" y=\"262\" width=\"14\" height=\"14\" fill=\"#fff\"/><rect x=\"258\" y=\"262\" width=\"14\" height=\"14\" fill=\"#111\"/><rect x=\"272\" y=\"262\" width=\"14\" height=\"14\" fill=\"#fff\"/><\/g><path d=\"M228 220 V290\" stroke=\"#5a3a1a\" stroke-width=\"4\"/><\/svg>","defenders-of-the-wild":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"dw-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#f0c27a\"/><stop offset=\"1\" stop-color=\"#e89a4a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#dw-s)\"/><g fill=\"#5a5a60\"><rect x=\"210\" y=\"90\" width=\"22\" height=\"120\"/><rect x=\"245\" y=\"120\" width=\"18\" height=\"90\"/><rect x=\"190\" y=\"160\" width=\"110\" height=\"60\"/><\/g><g fill=\"#8a8a90\" opacity=\".6\"><circle cx=\"221\" cy=\"72\" r=\"14\"/><circle cx=\"236\" cy=\"54\" r=\"10\"/><circle cx=\"254\" cy=\"104\" r=\"10\"/><\/g><g fill=\"none\" stroke=\"#3a3a40\" stroke-width=\"6\"><circle cx=\"230\" cy=\"190\" r=\"14\"/><circle cx=\"268\" cy=\"190\" r=\"10\"/><\/g><g fill=\"#2e5a2a\"><path d=\"M20 230 L50 110 L80 230Z\"/><path d=\"M60 230 L95 90 L130 230Z\"/><path d=\"M110 230 L140 130 L170 230Z\"/><\/g><path d=\"M0 220 Q150 205 300 220 V300 H0Z\" fill=\"#3a6a2a\"/><g fill=\"#d9622b\"><path d=\"M110 250 Q120 222 150 222 L168 210 L172 226 Q182 232 178 246 L160 252 Q130 262 110 250Z\"/><path d=\"M110 250 Q90 238 82 252 Q98 258 110 250Z\"/><\/g><path d=\"M168 210 L164 198 L176 206Z\" fill=\"#d9622b\"/><circle cx=\"170\" cy=\"230\" r=\"2\" fill=\"#1a1a1a\"/><path d=\"M82 252 q6 2 10 0\" stroke=\"#fff\" stroke-width=\"4\" fill=\"none\"/><\/svg>","age-of-galaxy":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"ag-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0d1530\"/><stop offset=\"1\" stop-color=\"#2a1a50\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#ag-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"173\" cy=\"44\" r=\"1.8\"/><circle cx=\"32\" cy=\"24\" r=\"2.2\"/><circle cx=\"56\" cy=\"99\" r=\"2.2\"/><circle cx=\"37\" cy=\"135\" r=\"1.2\"/><circle cx=\"27\" cy=\"28\" r=\"1.8\"/><circle cx=\"222\" cy=\"23\" r=\"1.2\"/><circle cx=\"54\" cy=\"147\" r=\"1.8\"/><circle cx=\"38\" cy=\"150\" r=\"1\"/><circle cx=\"122\" cy=\"167\" r=\"2.2\"/><circle cx=\"39\" cy=\"153\" r=\"2.2\"/><circle cx=\"211\" cy=\"18\" r=\"1.2\"/><circle cx=\"31\" cy=\"148\" r=\"1.2\"/><circle cx=\"156\" cy=\"113\" r=\"1.2\"/><circle cx=\"284\" cy=\"36\" r=\"2.2\"/><circle cx=\"165\" cy=\"149\" r=\"1.2\"/><circle cx=\"60\" cy=\"154\" r=\"2.2\"/><circle cx=\"104\" cy=\"101\" r=\"1\"/><circle cx=\"288\" cy=\"188\" r=\"1\"/><circle cx=\"38\" cy=\"164\" r=\"1.2\"/><circle cx=\"262\" cy=\"180\" r=\"2.2\"/><circle cx=\"226\" cy=\"86\" r=\"1.8\"/><circle cx=\"240\" cy=\"98\" r=\"1.5\"/><circle cx=\"135\" cy=\"52\" r=\"1.2\"/><circle cx=\"49\" cy=\"153\" r=\"1.5\"/><circle cx=\"276\" cy=\"132\" r=\"1.5\"/><circle cx=\"237\" cy=\"79\" r=\"2.2\"/><circle cx=\"45\" cy=\"36\" r=\"2.2\"/><circle cx=\"222\" cy=\"48\" r=\"1.5\"/><circle cx=\"85\" cy=\"131\" r=\"1.8\"/><circle cx=\"28\" cy=\"177\" r=\"1\"/><circle cx=\"168\" cy=\"93\" r=\"1.5\"/><circle cx=\"262\" cy=\"154\" r=\"1.8\"/><circle cx=\"43\" cy=\"29\" r=\"1.5\"/><circle cx=\"250\" cy=\"184\" r=\"1\"/><\/g><g fill=\"none\" stroke=\"#8a5cf0\" stroke-width=\"1.5\" opacity=\".6\"><ellipse cx=\"150\" cy=\"160\" rx=\"120\" ry=\"50\"/><ellipse cx=\"150\" cy=\"160\" rx=\"80\" ry=\"30\"/><\/g><circle cx=\"150\" cy=\"160\" r=\"20\" fill=\"#f6d36a\"/><circle cx=\"150\" cy=\"160\" r=\"32\" fill=\"#f6d36a\" opacity=\".2\"/><circle cx=\"62\" cy=\"140\" r=\"16\" fill=\"#3fb6c9\"/><circle cx=\"238\" cy=\"180\" r=\"14\" fill=\"#e0573a\"/><circle cx=\"190\" cy=\"132\" r=\"10\" fill=\"#8ad070\"/><g fill=\"#e8e0f8\"><path d=\"M90 80 l16 -4 l-4 16z\"/><path d=\"M220 70 l12 -3 l-3 12z\"/><path d=\"M110 240 l12 -3 l-3 12z\"/><\/g><\/svg>","beast":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"be-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0c1410\"/><stop offset=\"1\" stop-color=\"#1e2a1a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#be-s)\"/><circle cx=\"240\" cy=\"50\" r=\"18\" fill=\"#d8d8c0\" opacity=\".7\"/><g fill=\"#060a08\"><path d=\"M0 300 V60 h26 V300Z\"/><path d=\"M50 300 V40 h20 V300Z\"/><path d=\"M230 300 V70 h22 V300Z\"/><path d=\"M270 300 V30 h30 V300Z\"/><\/g><path d=\"M70 200 Q150 120 230 200 Q150 180 70 200Z\" fill=\"#0a100c\"/><g fill=\"#f0c040\"><path d=\"M115 160 q12 -12 26 0 q-13 8 -26 0z\"/><path d=\"M159 160 q14 -12 26 0 q-13 8 -26 0z\"/><\/g><g fill=\"#1a1a10\"><ellipse cx=\"128\" cy=\"160\" rx=\"2\" ry=\"5\"/><ellipse cx=\"172\" cy=\"160\" rx=\"2\" ry=\"5\"/><\/g><g fill=\"#f0c040\" opacity=\".25\"><circle cx=\"128\" cy=\"160\" r=\"18\"/><circle cx=\"172\" cy=\"160\" r=\"18\"/><\/g><path d=\"M0 260 Q150 240 300 260 V300 H0Z\" fill=\"#0a100c\"/><g><path d=\"M60 260 V230\" stroke=\"#3a2a1a\" stroke-width=\"3\"/><path d=\"M60 230 q-6 -10 0 -18 q6 8 0 18z\" fill=\"#f08a2a\"/><path d=\"M250 262 V234\" stroke=\"#3a2a1a\" stroke-width=\"3\"/><path d=\"M250 234 q-6 -10 0 -18 q6 8 0 18z\" fill=\"#f08a2a\"/><\/g><\/svg>","beast-shattered-isles":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"bs-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#a8c8d8\"/><stop offset=\"1\" stop-color=\"#4f9bb8\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#bs-s)\"/><rect y=\"200\" width=\"300\" height=\"100\" fill=\"#10283a\"/><g fill=\"#10283a\" opacity=\".5\"><path d=\"M0 200 Q40 190 80 200 T160 200 T240 200 T320 200 V210 H0Z\"/><\/g><g fill=\"#3a4a3a\"><path d=\"M40 205 L60 150 L90 140 L110 175 L100 205Z\"/><path d=\"M130 200 L150 110 L190 95 L210 140 L200 200Z\"/><path d=\"M220 205 L235 165 L265 160 L275 205Z\"/><\/g><g fill=\"#5a7a4a\"><path d=\"M60 150 L90 140 L85 150 L65 156Z\"/><path d=\"M150 110 L190 95 L188 108 L155 118Z\"/><path d=\"M235 165 L265 160 L262 168 L238 172Z\"/><\/g><g stroke=\"#10283a\" stroke-width=\"2\" fill=\"none\"><path d=\"M170 100 L175 150 L165 200\"/><\/g><g fill=\"#fff\" opacity=\".3\"><ellipse cx=\"80\" cy=\"120\" rx=\"60\" ry=\"8\"/><ellipse cx=\"230\" cy=\"130\" rx=\"70\" ry=\"9\"/><\/g><g stroke=\"#a8d0e0\" stroke-width=\"2\" opacity=\".5\"><path d=\"M20 240 h30 M120 260 h40 M220 235 h30\"/><\/g><\/svg>","beast-great-hunt":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"bh-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#f0a050\"/><stop offset=\"1\" stop-color=\"#a0401a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#bh-s)\"/><circle cx=\"150\" cy=\"190\" r=\"70\" fill=\"#f8d080\"/><path d=\"M0 220 Q150 200 300 220 V300 H0Z\" fill=\"#3a1a12\"/><g stroke=\"#2a120c\" stroke-width=\"5\" stroke-linecap=\"round\"><path d=\"M70 270 L220 70\"/><path d=\"M230 270 L80 70\"/><\/g><g fill=\"#2a120c\"><path d=\"M220 70 l-2 22 l14 -16z\"/><path d=\"M80 70 l2 22 l-14 -16z\"/><\/g><path d=\"M110 120 Q150 90 190 120 Q170 108 150 110 Q130 108 110 120Z\" fill=\"#e8d0a0\" stroke=\"#2a120c\" stroke-width=\"3\"/><g fill=\"#5a2a1a\"><ellipse cx=\"60\" cy=\"250\" rx=\"6\" ry=\"4\"/><ellipse cx=\"90\" cy=\"262\" rx=\"6\" ry=\"4\"/><ellipse cx=\"120\" cy=\"248\" rx=\"6\" ry=\"4\"/><ellipse cx=\"150\" cy=\"262\" rx=\"6\" ry=\"4\"/><ellipse cx=\"180\" cy=\"248\" rx=\"6\" ry=\"4\"/><ellipse cx=\"210\" cy=\"262\" rx=\"6\" ry=\"4\"/><\/g><\/svg>","ascendancy":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"ac-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2a1a3a\"/><stop offset=\"1\" stop-color=\"#5a3a6a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#ac-s)\"/><g fill=\"#f0d890\" opacity=\"0.8\"><circle cx=\"124\" cy=\"100\" r=\"1.8\"/><circle cx=\"72\" cy=\"55\" r=\"1\"/><circle cx=\"51\" cy=\"41\" r=\"1.2\"/><circle cx=\"267\" cy=\"59\" r=\"1.8\"/><circle cx=\"23\" cy=\"123\" r=\"1.8\"/><circle cx=\"240\" cy=\"105\" r=\"1.8\"/><circle cx=\"106\" cy=\"109\" r=\"1\"/><circle cx=\"256\" cy=\"65\" r=\"1\"/><circle cx=\"144\" cy=\"139\" r=\"1.8\"/><circle cx=\"250\" cy=\"103\" r=\"1\"/><circle cx=\"140\" cy=\"30\" r=\"1\"/><circle cx=\"205\" cy=\"164\" r=\"1.8\"/><circle cx=\"63\" cy=\"175\" r=\"1\"/><circle cx=\"181\" cy=\"66\" r=\"1\"/><circle cx=\"262\" cy=\"172\" r=\"2.2\"/><circle cx=\"114\" cy=\"154\" r=\"1.2\"/><\/g><g fill=\"#d1a440\"><rect x=\"132\" y=\"80\" width=\"36\" height=\"190\"/><rect x=\"100\" y=\"150\" width=\"28\" height=\"120\"/><rect x=\"172\" y=\"150\" width=\"28\" height=\"120\"/><rect x=\"70\" y=\"200\" width=\"160\" height=\"70\"/><\/g><g fill=\"#a07a20\"><path d=\"M128 80 L150 40 L172 80Z\"/><path d=\"M96 150 L114 120 L132 150Z\"/><path d=\"M168 150 L186 120 L204 150Z\"/><\/g><g fill=\"#2a1a3a\"><rect x=\"144\" y=\"100\" width=\"12\" height=\"18\" rx=\"6\"/><rect x=\"144\" y=\"140\" width=\"12\" height=\"18\" rx=\"6\"/><rect x=\"108\" y=\"170\" width=\"10\" height=\"14\" rx=\"5\"/><rect x=\"182\" y=\"170\" width=\"10\" height=\"14\" rx=\"5\"/><path d=\"M138 270 V240 A12 12 0 0 1 162 240 V270Z\"/><\/g><path d=\"M120 26 L128 10 L138 22 L150 6 L162 22 L172 10 L180 26Z\" fill=\"#f0d890\"/><path d=\"M0 270 H300 V300 H0Z\" fill=\"#1a0e24\"/><\/svg>","onward":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"300\" height=\"300\" fill=\"#3a6a4a\"/><g fill=\"#c8b48a\"><path d=\"M40 260 L260 40\" stroke=\"#c8b48a\" stroke-width=\"26\"/><path d=\"M40 260 Q40 40 260 40\" fill=\"none\" stroke=\"#c8b48a\" stroke-width=\"22\"/><path d=\"M40 260 Q260 260 260 40\" fill=\"none\" stroke=\"#c8b48a\" stroke-width=\"22\"/><\/g><path d=\"M40 260 L260 40\" stroke=\"#c8b48a\" stroke-width=\"26\"/><g fill=\"#2a4a3a\"><circle cx=\"110\" cy=\"110\" r=\"22\"/><circle cx=\"190\" cy=\"190\" r=\"22\"/><circle cx=\"80\" cy=\"170\" r=\"12\"/><circle cx=\"220\" cy=\"130\" r=\"12\"/><\/g><circle cx=\"40\" cy=\"260\" r=\"34\" fill=\"#3a7ad0\" stroke=\"#e8f0ff\" stroke-width=\"4\"/><circle cx=\"260\" cy=\"40\" r=\"34\" fill=\"#e05a3a\" stroke=\"#fff0e8\" stroke-width=\"4\"/><g fill=\"#3a7ad0\"><circle cx=\"100\" cy=\"200\" r=\"6\"/><circle cx=\"85\" cy=\"215\" r=\"6\"/><\/g><g fill=\"#e05a3a\"><circle cx=\"200\" cy=\"100\" r=\"6\"/><circle cx=\"215\" cy=\"85\" r=\"6\"/><\/g><circle cx=\"150\" cy=\"150\" r=\"10\" fill=\"#f0d060\" stroke=\"#fff\" stroke-width=\"3\"/><\/svg>","ironwood":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"300\" height=\"300\" fill=\"#b0b8a8\"/><path d=\"M0 0 H300 L0 300Z\" fill=\"#2e5a34\"/><path d=\"M300 0 V300 H0Z\" fill=\"#6a6a70\"/><g fill=\"#1a3a20\"><path d=\"M30 160 L55 70 L80 160Z\"/><path d=\"M70 120 L95 30 L120 120Z\"/><path d=\"M10 230 L30 170 L50 230Z\"/><\/g><g fill=\"#4a4a50\"><circle cx=\"230\" cy=\"220\" r=\"34\"/><circle cx=\"270\" cy=\"160\" r=\"22\"/><\/g><g fill=\"#6a6a70\"><circle cx=\"230\" cy=\"220\" r=\"14\"/><circle cx=\"270\" cy=\"160\" r=\"8\"/><\/g><g stroke=\"#4a4a50\" stroke-width=\"10\"><path d=\"M270 220 L260 220\"/><path d=\"M258 248 L251 241\"/><path d=\"M230 260 L230 250\"/><path d=\"M202 248 L209 241\"/><path d=\"M190 220 L200 220\"/><path d=\"M202 192 L209 199\"/><path d=\"M230 180 L230 190\"/><path d=\"M258 192 L251 199\"/><\/g><rect x=\"180\" y=\"250\" width=\"16\" height=\"40\" fill=\"#3a3a40\"/><path d=\"M0 300 L300 0\" stroke=\"#e8e4d8\" stroke-width=\"5\"/><g transform=\"rotate(-45 150 150)\"><rect x=\"146\" y=\"80\" width=\"8\" height=\"140\" fill=\"#e8e4d8\"/><rect x=\"128\" y=\"126\" width=\"44\" height=\"7\" fill=\"#8a6a3a\"/><\/g><\/svg>","brazil-imperial":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"bi-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#f6d36a\"/><stop offset=\"1\" stop-color=\"#f0a050\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#bi-s)\"/><circle cx=\"210\" cy=\"90\" r=\"36\" fill=\"#fff0b0\"/><rect y=\"210\" width=\"300\" height=\"90\" fill=\"#1f7a8a\"/><g stroke=\"#8ad0d8\" stroke-width=\"2\" opacity=\".6\"><path d=\"M20 240 h40 M140 260 h50 M230 235 h40\"/><\/g><path d=\"M0 215 Q150 185 300 215 V222 H0Z\" fill=\"#e8c890\"/><g fill=\"#0f3a26\"><rect x=\"100\" y=\"150\" width=\"90\" height=\"60\"/><path d=\"M95 150 L145 120 L195 150Z\"/><rect x=\"138\" y=\"96\" width=\"14\" height=\"26\"/><path d=\"M134 98 L145 82 L156 98Z\"/><\/g><g fill=\"#f6d36a\"><rect x=\"110\" y=\"166\" width=\"10\" height=\"16\"/><rect x=\"132\" y=\"166\" width=\"10\" height=\"16\"/><rect x=\"154\" y=\"166\" width=\"10\" height=\"16\"/><rect x=\"172\" y=\"166\" width=\"10\" height=\"16\"/><\/g><g><path d=\"M50 215 Q48 160 60 120\" stroke=\"#5a3a1a\" stroke-width=\"6\" fill=\"none\"/><g fill=\"#2a8a3a\"><path d=\"M60 120 Q30 110 18 128 Q40 118 60 122Z\"/><path d=\"M60 120 Q90 108 104 124 Q80 116 60 122Z\"/><path d=\"M60 120 Q45 92 28 92 Q48 100 60 120Z\"/><path d=\"M60 120 Q75 92 94 90 Q74 102 60 120Z\"/><\/g><path d=\"M250 215 Q252 170 242 140\" stroke=\"#5a3a1a\" stroke-width=\"5\" fill=\"none\"/><g fill=\"#2a8a3a\"><path d=\"M242 140 Q218 132 208 146 Q226 138 242 142Z\"/><path d=\"M242 140 Q266 130 278 144 Q258 136 242 142Z\"/><path d=\"M242 140 Q232 118 218 118 Q234 124 242 140Z\"/><\/g><\/g><\/svg>","ascension-tactics":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"at-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#122a52\"/><stop offset=\"1\" stop-color=\"#0a1a36\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#at-s)\"/><g stroke=\"#3a5a90\" stroke-width=\"1.5\"><path d=\"M60 100 L6 300\"/><path d=\"M90 100 L54 300\"/><path d=\"M120 100 L102 300\"/><path d=\"M150 100 L150 300\"/><path d=\"M180 100 L198 300\"/><path d=\"M210 100 L246 300\"/><path d=\"M240 100 L294 300\"/><path d=\"M0 130 H300\"/><path d=\"M0 170 H300\"/><path d=\"M0 220 H300\"/><path d=\"M0 280 H300\"/><\/g><circle cx=\"150\" cy=\"60\" r=\"40\" fill=\"none\" stroke=\"#e0b84a\" stroke-width=\"5\"/><circle cx=\"150\" cy=\"60\" r=\"28\" fill=\"#c23b3b\" opacity=\".8\"/><g fill=\"#e0b84a\"><path d=\"M95 190 a10 10 0 1 1 20 0 l6 30 h-32z\"/><path d=\"M185 240 a12 12 0 1 1 24 0 l7 36 h-38z\"/><\/g><g fill=\"#c23b3b\"><path d=\"M140 150 a8 8 0 1 1 16 0 l5 24 h-26z\"/><\/g><g stroke=\"#f0d890\" stroke-width=\"2\" opacity=\".6\" stroke-dasharray=\"4 4\"><path d=\"M105 180 L148 152\"/><\/g><\/svg>","endeavor-deep-sea":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"ed-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2fb3c9\"/><stop offset=\"0.4\" stop-color=\"#0a4a6a\"/><stop offset=\"1\" stop-color=\"#041828\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#ed-s)\"/><path d=\"M0 20 Q40 12 80 20 T160 20 T240 20 T320 20\" stroke=\"#bfeaf2\" stroke-width=\"3\" fill=\"none\" opacity=\".6\"/><path d=\"M150 140 L80 300 H220Z\" fill=\"#e8f8a0\" opacity=\".12\"/><g transform=\"translate(150 130)\"><ellipse rx=\"44\" ry=\"18\" fill=\"#e8c21e\"/><rect x=\"-14\" y=\"-30\" width=\"28\" height=\"16\" rx=\"5\" fill=\"#e8c21e\"/><g fill=\"#0a4a6a\"><circle cx=\"-18\" r=\"6\"/><circle cx=\"2\" r=\"6\"/><circle cx=\"22\" r=\"6\"/><\/g><path d=\"M44 0 L58 -10 V10Z\" fill=\"#c09a10\"/><circle cx=\"-44\" cy=\"0\" r=\"4\" fill=\"#fff8c0\"/><\/g><g fill=\"#e090d0\" opacity=\".85\"><path d=\"M60 220 a16 12 0 0 1 32 0z\"/><path d=\"M228 200 a12 9 0 0 1 24 0z\"/><\/g><g stroke=\"#e090d0\" stroke-width=\"2\" fill=\"none\" opacity=\".7\"><path d=\"M64 220 q-2 14 2 24 M76 220 q2 16 -2 26 M88 220 q2 12 0 20\"/><path d=\"M232 200 q-2 10 2 18 M240 200 q2 12 -2 20 M248 200 q2 10 0 16\"/><\/g><path d=\"M0 280 Q60 260 120 275 T240 265 T300 270 V300 H0Z\" fill=\"#0a2a1a\"/><g fill=\"#2a8a5a\"><path d=\"M40 285 q-6 -30 4 -50 q-2 24 4 50z\"/><path d=\"M260 280 q6 -26 -2 -44 q8 20 8 44z\"/><\/g><g fill=\"none\" stroke=\"#bfeaf2\" opacity=\".6\"><circle cx=\"196\" cy=\"100\" r=\"4\"/><circle cx=\"206\" cy=\"84\" r=\"3\"/><circle cx=\"200\" cy=\"70\" r=\"2\"/><\/g><\/svg>","dune-rise-of-ix":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"dx-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#14202e\"/><stop offset=\"1\" stop-color=\"#4a6a8a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#dx-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"245\" cy=\"162\" r=\"1.5\"/><circle cx=\"144\" cy=\"41\" r=\"1.2\"/><circle cx=\"11\" cy=\"92\" r=\"2.2\"/><circle cx=\"245\" cy=\"160\" r=\"1\"/><circle cx=\"179\" cy=\"147\" r=\"2.2\"/><circle cx=\"28\" cy=\"192\" r=\"1.8\"/><circle cx=\"94\" cy=\"186\" r=\"1.8\"/><circle cx=\"224\" cy=\"46\" r=\"1.2\"/><circle cx=\"129\" cy=\"19\" r=\"1\"/><circle cx=\"75\" cy=\"135\" r=\"2.2\"/><circle cx=\"40\" cy=\"182\" r=\"1.8\"/><circle cx=\"60\" cy=\"80\" r=\"1.2\"/><circle cx=\"122\" cy=\"191\" r=\"1.8\"/><circle cx=\"52\" cy=\"74\" r=\"1.2\"/><circle cx=\"211\" cy=\"77\" r=\"1.5\"/><circle cx=\"30\" cy=\"57\" r=\"1\"/><circle cx=\"218\" cy=\"20\" r=\"1.8\"/><circle cx=\"259\" cy=\"41\" r=\"1\"/><\/g><g fill=\"none\" stroke=\"#7aa0c8\" stroke-width=\"3\" opacity=\".6\"><circle cx=\"150\" cy=\"100\" r=\"60\"/><circle cx=\"150\" cy=\"100\" r=\"44\" stroke-dasharray=\"6 6\"/><\/g><g stroke=\"#7aa0c8\" stroke-width=\"2\" opacity=\".5\"><path d=\"M90 100 H40 M210 100 H260 M150 40 V10\"/><\/g><path d=\"M100 120 L150 84 L200 120 L186 130 H114Z\" fill=\"#2a3a4a\"/><path d=\"M114 130 H186 L176 142 H124Z\" fill=\"#1a2430\"/><g fill=\"#9ad8f8\"><circle cx=\"130\" cy=\"122\" r=\"3\"/><circle cx=\"150\" cy=\"118\" r=\"3\"/><circle cx=\"170\" cy=\"122\" r=\"3\"/><\/g><path d=\"M0 210 Q70 180 140 200 T300 190 V300 H0Z\" fill=\"#c8905a\"/><path d=\"M0 245 Q90 215 180 240 T300 235 V300 H0Z\" fill=\"#9a6a3a\"/><\/svg>","dune-immortality":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"dm-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1a0e26\"/><stop offset=\"1\" stop-color=\"#7a4a8a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#dm-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"24\" cy=\"115\" r=\"1.8\"/><circle cx=\"15\" cy=\"58\" r=\"1.8\"/><circle cx=\"259\" cy=\"77\" r=\"1.2\"/><circle cx=\"25\" cy=\"139\" r=\"1.8\"/><circle cx=\"175\" cy=\"25\" r=\"1.2\"/><circle cx=\"192\" cy=\"17\" r=\"1.8\"/><circle cx=\"79\" cy=\"160\" r=\"1.5\"/><circle cx=\"203\" cy=\"113\" r=\"1.5\"/><circle cx=\"142\" cy=\"122\" r=\"1.2\"/><circle cx=\"163\" cy=\"175\" r=\"1.5\"/><circle cx=\"76\" cy=\"122\" r=\"1.2\"/><circle cx=\"233\" cy=\"163\" r=\"1.8\"/><circle cx=\"30\" cy=\"155\" r=\"1\"/><circle cx=\"128\" cy=\"40\" r=\"1.2\"/><circle cx=\"163\" cy=\"143\" r=\"1.5\"/><circle cx=\"130\" cy=\"86\" r=\"2.2\"/><\/g><g fill=\"none\" stroke-width=\"5\" stroke-linecap=\"round\"><path d=\"M150 20 L150.0 20.0 L161.7 26.4 L171.5 32.8 L178.0 39.2 L180.0 45.6 L177.3 52.0 L170.3 58.4 L160.0 64.8 L148.2 71.2 L136.7 77.6 L127.3 84.0 L121.5 90.4 L120.1 96.8 L123.5 103.2 L131.1 109.6 L141.6 116.0 L153.5 122.4 L164.8 128.8 L173.8 135.2 L179.0 141.6 L179.7 148.0 L175.6 154.4 L167.5 160.8 L156.7 167.2 L144.8 173.6 L133.7 180.0\" stroke=\"#c89ae0\"/><path d=\"M150 20 L150.0 20.0 L138.3 26.4 L128.5 32.8 L122.0 39.2 L120.0 45.6 L122.7 52.0 L129.7 58.4 L140.0 64.8 L151.8 71.2 L163.3 77.6 L172.7 84.0 L178.5 90.4 L179.9 96.8 L176.5 103.2 L168.9 109.6 L158.4 116.0 L146.5 122.4 L135.2 128.8 L126.2 135.2 L121.0 141.6 L120.3 148.0 L124.4 154.4 L132.5 160.8 L143.3 167.2 L155.2 173.6 L166.3 180.0\" stroke=\"#f0d0ff\"/><\/g><g stroke=\"#9a6ab0\" stroke-width=\"3\"><path d=\"M161.7 26.4 L138.3 26.4\"/><path d=\"M178.0 39.2 L122.0 39.2\"/><path d=\"M177.3 52.0 L122.7 52.0\"/><path d=\"M160.0 64.8 L140.0 64.8\"/><path d=\"M136.7 77.6 L163.3 77.6\"/><path d=\"M121.5 90.4 L178.5 90.4\"/><path d=\"M123.5 103.2 L176.5 103.2\"/><path d=\"M141.6 116.0 L158.4 116.0\"/><path d=\"M164.8 128.8 L135.2 128.8\"/><path d=\"M179.0 141.6 L121.0 141.6\"/><path d=\"M175.6 154.4 L124.4 154.4\"/><path d=\"M156.7 167.2 L143.3 167.2\"/><\/g><path d=\"M0 210 Q70 180 140 200 T300 190 V300 H0Z\" fill=\"#b07a5a\"/><path d=\"M0 245 Q90 215 180 240 T300 235 V300 H0Z\" fill=\"#7a4a3a\"/><\/svg>","dune-bloodlines":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"db-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2a0a0e\"/><stop offset=\"1\" stop-color=\"#a0402a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#db-s)\"/><circle cx=\"150\" cy=\"120\" r=\"56\" fill=\"#e8b080\" opacity=\".85\"/><g stroke=\"#2a0a0e\" stroke-width=\"7\" stroke-linecap=\"round\"><path d=\"M100 70 L200 170\"/><path d=\"M200 70 L100 170\"/><\/g><g fill=\"#2a0a0e\"><path d=\"M92 62 l16 2 l-6 6z\"/><path d=\"M208 62 l-16 2 l6 6z\"/><\/g><g stroke=\"#e8d8c0\" stroke-width=\"3\"><path d=\"M110 80 L184 154\"/><path d=\"M190 80 L116 154\"/><\/g><path d=\"M150 180 q-14 20 0 30 q14 -10 0 -30z\" fill=\"#c0302a\"/><path d=\"M0 210 Q70 180 140 200 T300 190 V300 H0Z\" fill=\"#8a3a22\"/><path d=\"M0 245 Q90 215 180 240 T300 235 V300 H0Z\" fill=\"#5a1e14\"/><\/svg>","dune-uprising":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"du-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#5a2a10\"/><stop offset=\"1\" stop-color=\"#f0a050\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#du-s)\"/><circle cx=\"80\" cy=\"80\" r=\"28\" fill=\"#f8e0b0\"/><g fill=\"none\" stroke=\"#f8d0a0\" stroke-width=\"3\" opacity=\".5\"><path d=\"M180 60 C240 60 260 110 220 130 C190 145 170 120 190 105\"/><path d=\"M200 40 C290 50 290 140 230 155\"/><\/g><path d=\"M0 210 Q70 180 140 200 T300 190 V300 H0Z\" fill=\"#d9822b\"/><path d=\"M0 245 Q90 215 180 240 T300 235 V300 H0Z\" fill=\"#a85a1a\"/><g fill=\"#2a1608\"><path d=\"M70 235 a8 8 0 1 1 16 0 l4 30 h-24z\"/><path d=\"M110 228 a8 8 0 1 1 16 0 l4 30 h-24z\"/><path d=\"M150 236 a8 8 0 1 1 16 0 l4 30 h-24z\"/><\/g><g stroke=\"#2a1608\" stroke-width=\"3\"><path d=\"M96 262 V196\"/><path d=\"M136 256 V190\"/><\/g><path d=\"M96 196 L122 204 L96 212Z\" fill=\"#e8d0a0\"/><\/svg>","hegemony":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"hg-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#e8c870\"/><stop offset=\"1\" stop-color=\"#c8a03a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#hg-s)\"/><g fill=\"#5a5048\"><rect x=\"200\" y=\"70\" width=\"18\" height=\"110\"/><rect x=\"232\" y=\"100\" width=\"14\" height=\"80\"/><rect x=\"190\" y=\"140\" width=\"110\" height=\"60\"/><\/g><g fill=\"#8a7a6a\" opacity=\".6\"><circle cx=\"209\" cy=\"54\" r=\"12\"/><circle cx=\"222\" cy=\"38\" r=\"9\"/><\/g><path d=\"M30 110 L110 70 L190 110Z\" fill=\"#f4ecd8\"/><rect x=\"30\" y=\"110\" width=\"160\" height=\"10\" fill=\"#e0d4b8\"/><g fill=\"#f4ecd8\"><rect x=\"42\" y=\"122\" width=\"12\" height=\"68\"/><rect x=\"70\" y=\"122\" width=\"12\" height=\"68\"/><rect x=\"98\" y=\"122\" width=\"12\" height=\"68\"/><rect x=\"126\" y=\"122\" width=\"12\" height=\"68\"/><rect x=\"154\" y=\"122\" width=\"12\" height=\"68\"/><\/g><rect x=\"24\" y=\"190\" width=\"172\" height=\"12\" fill=\"#e0d4b8\"/><g fill=\"#3a1418\"><path d=\"M14 300 V262 a12 12 0 1 1 24 0 V300Z\"/><circle cx=\"26\" cy=\"238\" r=\"9.6\"/><path d=\"M46 300 V262 a11 11 0 1 1 22 0 V300Z\"/><circle cx=\"57\" cy=\"239\" r=\"8.8\"/><path d=\"M76 300 V262 a13 13 0 1 1 26 0 V300Z\"/><circle cx=\"89\" cy=\"237\" r=\"10.4\"/><path d=\"M110 300 V262 a11 11 0 1 1 22 0 V300Z\"/><circle cx=\"121\" cy=\"239\" r=\"8.8\"/><path d=\"M140 300 V262 a12 12 0 1 1 24 0 V300Z\"/><circle cx=\"152\" cy=\"238\" r=\"9.6\"/><path d=\"M172 300 V262 a13 13 0 1 1 26 0 V300Z\"/><circle cx=\"185\" cy=\"237\" r=\"10.4\"/><path d=\"M206 300 V262 a11 11 0 1 1 22 0 V300Z\"/><circle cx=\"217\" cy=\"239\" r=\"8.8\"/><path d=\"M236 300 V262 a12 12 0 1 1 24 0 V300Z\"/><circle cx=\"248\" cy=\"238\" r=\"9.6\"/><path d=\"M266 300 V262 a12 12 0 1 1 24 0 V300Z\"/><circle cx=\"278\" cy=\"238\" r=\"9.6\"/><\/g><path d=\"M0 215 H300\" stroke=\"#3a1418\" stroke-width=\"2\" opacity=\".3\"/><\/svg>","tm-ares":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"ma-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#140a10\"/><stop offset=\"1\" stop-color=\"#3a1a14\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#ma-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"239\" cy=\"149\" r=\"1.8\"/><circle cx=\"239\" cy=\"136\" r=\"2.2\"/><circle cx=\"105\" cy=\"53\" r=\"2.2\"/><circle cx=\"251\" cy=\"167\" r=\"2.2\"/><circle cx=\"103\" cy=\"30\" r=\"1.8\"/><circle cx=\"163\" cy=\"42\" r=\"1\"/><circle cx=\"283\" cy=\"183\" r=\"1\"/><circle cx=\"210\" cy=\"121\" r=\"2.2\"/><circle cx=\"88\" cy=\"165\" r=\"1\"/><circle cx=\"278\" cy=\"22\" r=\"1\"/><circle cx=\"26\" cy=\"54\" r=\"1.2\"/><circle cx=\"23\" cy=\"124\" r=\"1.5\"/><circle cx=\"233\" cy=\"157\" r=\"1.2\"/><circle cx=\"273\" cy=\"65\" r=\"1.5\"/><circle cx=\"263\" cy=\"7\" r=\"1\"/><circle cx=\"242\" cy=\"173\" r=\"1.5\"/><circle cx=\"216\" cy=\"147\" r=\"1\"/><circle cx=\"138\" cy=\"86\" r=\"1.2\"/><circle cx=\"270\" cy=\"79\" r=\"1\"/><circle cx=\"43\" cy=\"150\" r=\"1\"/><circle cx=\"213\" cy=\"33\" r=\"1.5\"/><circle cx=\"205\" cy=\"23\" r=\"1\"/><circle cx=\"8\" cy=\"60\" r=\"1.2\"/><circle cx=\"34\" cy=\"126\" r=\"1.8\"/><circle cx=\"211\" cy=\"113\" r=\"1\"/><circle cx=\"109\" cy=\"178\" r=\"1.5\"/><circle cx=\"180\" cy=\"28\" r=\"1.5\"/><circle cx=\"178\" cy=\"9\" r=\"1.8\"/><circle cx=\"68\" cy=\"40\" r=\"1.2\"/><circle cx=\"59\" cy=\"8\" r=\"1\"/><\/g><circle cx=\"150\" cy=\"170\" r=\"105\" fill=\"#c8502a\"/><path d=\"M70 120 Q110 100 140 130 Q120 160 80 150Z\" fill=\"#2a6aa0\"/><path d=\"M180 200 Q220 180 240 210 Q210 235 185 225Z\" fill=\"#2a6aa0\"/><g fill=\"#4a9a4a\"><circle cx=\"140\" cy=\"140\" r=\"10\"/><circle cx=\"154\" cy=\"146\" r=\"8\"/><circle cx=\"176\" cy=\"196\" r=\"9\"/><circle cx=\"110\" cy=\"210\" r=\"11\"/><\/g><g fill=\"#a03a1a\"><circle cx=\"190\" cy=\"110\" r=\"12\"/><circle cx=\"210\" cy=\"140\" r=\"7\"/><circle cx=\"90\" cy=\"190\" r=\"8\"/><\/g><path d=\"M240 40 l14 -8 l-6 30 l-8 4z\" fill=\"#e8e8f0\"/><path d=\"M246 66 l-4 14 l8 -10z\" fill=\"#f08a2a\"/><\/svg>","the-gang":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"300\" height=\"300\" fill=\"#0d3a22\"/><circle cx=\"150\" cy=\"150\" r=\"130\" fill=\"#145a34\"/><g transform=\"rotate(-12 120 150)\"><rect x=\"80\" y=\"100\" width=\"70\" height=\"100\" rx=\"8\" fill=\"#f4ecd8\"/><rect x=\"88\" y=\"108\" width=\"54\" height=\"84\" rx=\"4\" fill=\"none\" stroke=\"#c03a2a\" stroke-width=\"3\"/><\/g><g transform=\"rotate(10 180 150)\"><rect x=\"150\" y=\"96\" width=\"70\" height=\"100\" rx=\"8\" fill=\"#f4ecd8\"/><rect x=\"158\" y=\"104\" width=\"54\" height=\"84\" rx=\"4\" fill=\"#c03a2a\"/><path d=\"M158 104 L212 188 M212 104 L158 188\" stroke=\"#f4ecd8\" stroke-width=\"2\"/><\/g><path d=\"M100 60 Q150 40 200 60 Q190 80 172 76 Q160 64 150 72 Q140 64 128 76 Q110 80 100 60Z\" fill=\"#1a1a1a\"/><g fill=\"#f4ecd8\"><ellipse cx=\"128\" cy=\"66\" rx=\"8\" ry=\"5\"/><ellipse cx=\"172\" cy=\"66\" rx=\"8\" ry=\"5\"/><\/g><g><circle cx=\"80\" cy=\"240\" r=\"20\" fill=\"#c8a03a\"/><circle cx=\"80\" cy=\"240\" r=\"12\" fill=\"none\" stroke=\"#fff\" stroke-width=\"3\" stroke-dasharray=\"5 4\"/><circle cx=\"120\" cy=\"252\" r=\"20\" fill=\"#c03a2a\"/><circle cx=\"120\" cy=\"252\" r=\"12\" fill=\"none\" stroke=\"#fff\" stroke-width=\"3\" stroke-dasharray=\"5 4\"/><circle cx=\"220\" cy=\"244\" r=\"20\" fill=\"#2a5ab0\"/><circle cx=\"220\" cy=\"244\" r=\"12\" fill=\"none\" stroke=\"#fff\" stroke-width=\"3\" stroke-dasharray=\"5 4\"/><\/g><\/svg>","circadians-chaos-order":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"cc-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1a1430\"/><stop offset=\"1\" stop-color=\"#c04aa0\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#cc-s)\"/><circle cx=\"90\" cy=\"90\" r=\"30\" fill=\"#f8d070\"/><circle cx=\"210\" cy=\"70\" r=\"18\" fill=\"#7ad8e0\"/><path d=\"M0 220 Q150 190 300 220 V300 H0Z\" fill=\"#3a1a4a\"/><g fill=\"#5a2a6a\"><path d=\"M60 220 L72 120 L84 220Z\"/><path d=\"M120 222 L140 90 L160 222Z\"/><path d=\"M200 220 L214 130 L228 220Z\"/><\/g><g fill=\"#7ad8e0\"><circle cx=\"72\" cy=\"120\" r=\"5\"/><circle cx=\"140\" cy=\"90\" r=\"6\"/><circle cx=\"214\" cy=\"130\" r=\"5\"/><\/g><g fill=\"#e080c0\"><path d=\"M30 260 q10 -14 20 0z\"/><path d=\"M250 255 q12 -16 24 0z\"/><path d=\"M170 270 q8 -12 16 0z\"/><\/g><g fill=\"#1a1430\"><path d=\"M100 250 l8 -14 l8 14z\"/><path d=\"M180 245 l6 -10 l6 10z\"/><\/g><\/svg>","welcome-to":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"wt-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#bfe0f0\"/><stop offset=\"1\" stop-color=\"#e8f4fa\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#wt-s)\"/><g transform=\"translate(20 90)\"><rect width=\"40\" height=\"30\" fill=\"#f6d36a\"/><path d=\"M-4 0 L20 -18 L44 0Z\" fill=\"#c0503a\"/><rect x=\"15\" y=\"12\" width=\"10\" height=\"18\" fill=\"#1e3a5a\"/><text x=\"20\" y=\"-4\" font-size=\"9\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">1<\/text><\/g><g transform=\"translate(80 90)\"><rect width=\"40\" height=\"30\" fill=\"#f4f0e8\"/><path d=\"M-4 0 L20 -18 L44 0Z\" fill=\"#c0503a\"/><rect x=\"15\" y=\"12\" width=\"10\" height=\"18\" fill=\"#1e3a5a\"/><text x=\"20\" y=\"-4\" font-size=\"9\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">3<\/text><\/g><g transform=\"translate(140 90)\"><rect width=\"40\" height=\"30\" fill=\"#8ad0b0\"/><path d=\"M-4 0 L20 -18 L44 0Z\" fill=\"#c0503a\"/><rect x=\"15\" y=\"12\" width=\"10\" height=\"18\" fill=\"#1e3a5a\"/><text x=\"20\" y=\"-4\" font-size=\"9\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">5<\/text><\/g><g transform=\"translate(200 90)\"><rect width=\"40\" height=\"30\" fill=\"#f0a0b8\"/><path d=\"M-4 0 L20 -18 L44 0Z\" fill=\"#c0503a\"/><rect x=\"15\" y=\"12\" width=\"10\" height=\"18\" fill=\"#1e3a5a\"/><text x=\"20\" y=\"-4\" font-size=\"9\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">8<\/text><\/g><g transform=\"translate(250 90)\"><rect width=\"40\" height=\"30\" fill=\"#f4f0e8\"/><path d=\"M-4 0 L20 -18 L44 0Z\" fill=\"#c0503a\"/><rect x=\"15\" y=\"12\" width=\"10\" height=\"18\" fill=\"#1e3a5a\"/><text x=\"20\" y=\"-4\" font-size=\"9\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">9<\/text><\/g><g transform=\"translate(20 180)\"><rect width=\"40\" height=\"30\" fill=\"#f4f0e8\"/><path d=\"M-4 0 L20 -18 L44 0Z\" fill=\"#c0503a\"/><rect x=\"15\" y=\"12\" width=\"10\" height=\"18\" fill=\"#1e3a5a\"/><text x=\"20\" y=\"-4\" font-size=\"9\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">2<\/text><\/g><g transform=\"translate(80 180)\"><rect width=\"40\" height=\"30\" fill=\"#f0a0b8\"/><path d=\"M-4 0 L20 -18 L44 0Z\" fill=\"#c0503a\"/><rect x=\"15\" y=\"12\" width=\"10\" height=\"18\" fill=\"#1e3a5a\"/><text x=\"20\" y=\"-4\" font-size=\"9\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">4<\/text><\/g><g transform=\"translate(140 180)\"><rect width=\"40\" height=\"30\" fill=\"#f6d36a\"/><path d=\"M-4 0 L20 -18 L44 0Z\" fill=\"#c0503a\"/><rect x=\"15\" y=\"12\" width=\"10\" height=\"18\" fill=\"#1e3a5a\"/><text x=\"20\" y=\"-4\" font-size=\"9\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">7<\/text><\/g><g transform=\"translate(200 180)\"><rect width=\"40\" height=\"30\" fill=\"#f4f0e8\"/><path d=\"M-4 0 L20 -18 L44 0Z\" fill=\"#c0503a\"/><rect x=\"15\" y=\"12\" width=\"10\" height=\"18\" fill=\"#1e3a5a\"/><text x=\"20\" y=\"-4\" font-size=\"9\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">11<\/text><\/g><g transform=\"translate(250 180)\"><rect width=\"40\" height=\"30\" fill=\"#8ad0b0\"/><path d=\"M-4 0 L20 -18 L44 0Z\" fill=\"#c0503a\"/><rect x=\"15\" y=\"12\" width=\"10\" height=\"18\" fill=\"#1e3a5a\"/><text x=\"20\" y=\"-4\" font-size=\"9\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">13<\/text><\/g><rect y=\"122\" width=\"300\" height=\"34\" fill=\"#8a8a90\"/><path d=\"M0 139 H300\" stroke=\"#fff\" stroke-width=\"2\" stroke-dasharray=\"12 10\"/><rect y=\"212\" width=\"300\" height=\"88\" fill=\"#7ac06a\"/><rect x=\"40\" y=\"236\" width=\"70\" height=\"36\" rx=\"8\" fill=\"#5ab8e0\"/><g fill=\"#3a8a3a\"><circle cx=\"160\" cy=\"250\" r=\"14\"/><circle cx=\"190\" cy=\"244\" r=\"16\"/><circle cx=\"230\" cy=\"254\" r=\"13\"/><circle cx=\"260\" cy=\"246\" r=\"15\"/><\/g><g stroke=\"#1e3a5a\" stroke-width=\"3\" stroke-linecap=\"round\"><path d=\"M248 30 L278 60\"/><\/g><path d=\"M244 26 L252 30 L248 34Z\" fill=\"#1e3a5a\"/><\/svg>","flip-7":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"f7-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#3a0e2a\"/><stop offset=\"1\" stop-color=\"#7a1a3a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#f7-s)\"/><g transform=\"rotate(-30 150 250)\"><rect x=\"115\" y=\"80\" width=\"70\" height=\"104\" rx=\"8\" fill=\"#5ab8e0\" stroke=\"#fff\" stroke-width=\"3\"/><text x=\"150\" y=\"150\" font-size=\"44\" font-weight=\"700\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">3<\/text><\/g><g transform=\"rotate(-15 150 250)\"><rect x=\"115\" y=\"80\" width=\"70\" height=\"104\" rx=\"8\" fill=\"#8ad070\" stroke=\"#fff\" stroke-width=\"3\"/><text x=\"150\" y=\"150\" font-size=\"44\" font-weight=\"700\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">5<\/text><\/g><g transform=\"rotate(0 150 250)\"><rect x=\"115\" y=\"80\" width=\"70\" height=\"104\" rx=\"8\" fill=\"#f6d36a\" stroke=\"#fff\" stroke-width=\"3\"/><text x=\"150\" y=\"150\" font-size=\"44\" font-weight=\"700\" text-anchor=\"middle\" fill=\"#3a0e2a\" font-family=\"sans-serif\">7<\/text><\/g><g transform=\"rotate(15 150 250)\"><rect x=\"115\" y=\"80\" width=\"70\" height=\"104\" rx=\"8\" fill=\"#f05a5a\" stroke=\"#fff\" stroke-width=\"3\"/><text x=\"150\" y=\"150\" font-size=\"44\" font-weight=\"700\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">2<\/text><\/g><g transform=\"rotate(30 150 250)\"><rect x=\"115\" y=\"80\" width=\"70\" height=\"104\" rx=\"8\" fill=\"#b88ae0\" stroke=\"#fff\" stroke-width=\"3\"/><text x=\"150\" y=\"150\" font-size=\"44\" font-weight=\"700\" text-anchor=\"middle\" fill=\"#fff\" font-family=\"sans-serif\">9<\/text><\/g><g fill=\"#f6d36a\"><path d=\"M40 50 l4 10 l10 2 l-8 6 l2 10 l-8 -6 l-8 6 l2 -10 l-8 -6 l10 -2z\"/><path d=\"M250 40 l3 7 l7 1 l-5 4 l1 7 l-6 -4 l-6 4 l1 -7 l-5 -4 l7 -1z\"/><\/g><\/svg>","secret-hitler":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"sh-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2a1a10\"/><stop offset=\"1\" stop-color=\"#5a3a22\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#sh-s)\"/><path d=\"M70 120 A80 60 0 0 1 230 120Z\" fill=\"#c8b890\"/><rect x=\"60\" y=\"120\" width=\"180\" height=\"10\" fill=\"#b0a078\"/><g fill=\"#c8b890\"><rect x=\"74\" y=\"132\" width=\"12\" height=\"60\"/><rect x=\"100\" y=\"132\" width=\"12\" height=\"60\"/><rect x=\"126\" y=\"132\" width=\"12\" height=\"60\"/><rect x=\"152\" y=\"132\" width=\"12\" height=\"60\"/><rect x=\"178\" y=\"132\" width=\"12\" height=\"60\"/><rect x=\"204\" y=\"132\" width=\"12\" height=\"60\"/><\/g><rect x=\"54\" y=\"192\" width=\"192\" height=\"12\" fill=\"#b0a078\"/><g transform=\"rotate(-10 100 245)\"><rect x=\"70\" y=\"220\" width=\"56\" height=\"44\" rx=\"4\" fill=\"#3a6aa8\"/><rect x=\"76\" y=\"226\" width=\"44\" height=\"32\" rx=\"2\" fill=\"none\" stroke=\"#e8f0ff\" stroke-width=\"2\"/><\/g><g transform=\"rotate(8 200 245)\"><rect x=\"174\" y=\"220\" width=\"56\" height=\"44\" rx=\"4\" fill=\"#d9822b\"/><rect x=\"180\" y=\"226\" width=\"44\" height=\"32\" rx=\"2\" fill=\"none\" stroke=\"#fff0e0\" stroke-width=\"2\"/><\/g><path d=\"M130 250 h40 v26 h-40z\" fill=\"#f4ecd8\"/><path d=\"M130 250 l20 14 l20 -14\" fill=\"none\" stroke=\"#5a3a22\" stroke-width=\"2\"/><path d=\"M150 70 V40\" stroke=\"#c8b890\" stroke-width=\"3\"/><path d=\"M150 42 l18 6 l-18 6z\" fill=\"#c8b890\"/><\/svg>","five-tribes":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"ft-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1a1440\"/><stop offset=\"1\" stop-color=\"#c0603a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#ft-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"250\" cy=\"40\" r=\"2.2\"/><circle cx=\"187\" cy=\"24\" r=\"1.8\"/><circle cx=\"13\" cy=\"53\" r=\"1.8\"/><circle cx=\"148\" cy=\"88\" r=\"1.8\"/><circle cx=\"124\" cy=\"77\" r=\"1\"/><circle cx=\"82\" cy=\"62\" r=\"1.5\"/><circle cx=\"91\" cy=\"49\" r=\"1.2\"/><circle cx=\"38\" cy=\"79\" r=\"1.2\"/><circle cx=\"46\" cy=\"71\" r=\"1.5\"/><circle cx=\"215\" cy=\"108\" r=\"1\"/><circle cx=\"17\" cy=\"13\" r=\"2.2\"/><circle cx=\"122\" cy=\"17\" r=\"1.8\"/><circle cx=\"235\" cy=\"20\" r=\"1.8\"/><circle cx=\"77\" cy=\"75\" r=\"1.5\"/><\/g><path d=\"M222 50 a24 24 0 1 0 18 40 a18 18 0 1 1 -18 -40z\" fill=\"#f8e0a0\"/><g fill=\"#3a1e08\"><rect x=\"90\" y=\"140\" width=\"120\" height=\"80\"/><path d=\"M110 140 a40 40 0 0 1 80 0z\"/><rect x=\"60\" y=\"110\" width=\"14\" height=\"110\"/><rect x=\"226\" y=\"110\" width=\"14\" height=\"110\"/><path d=\"M56 112 L67 86 L78 112Z\"/><path d=\"M222 112 L233 86 L244 112Z\"/><path d=\"M135 220 V190 a15 15 0 0 1 30 0 V220Z\" fill=\"#1a0e04\"/><\/g><path d=\"M150 100 V90\" stroke=\"#3a1e08\" stroke-width=\"3\"/><rect y=\"220\" width=\"300\" height=\"80\" fill=\"#e0a040\"/><g><path d=\"M40 270 a7 7 0 1 1 14 0 l4 16 h-22z\" fill=\"#f4f4f0\"/><path d=\"M76 270 a7 7 0 1 1 14 0 l4 16 h-22z\" fill=\"#3a6ac0\"/><path d=\"M112 270 a7 7 0 1 1 14 0 l4 16 h-22z\" fill=\"#e0c030\"/><path d=\"M148 270 a7 7 0 1 1 14 0 l4 16 h-22z\" fill=\"#3aa050\"/><path d=\"M184 270 a7 7 0 1 1 14 0 l4 16 h-22z\" fill=\"#c03a3a\"/><path d=\"M220 270 a7 7 0 1 1 14 0 l4 16 h-22z\" fill=\"#f4f4f0\"/><path d=\"M256 270 a7 7 0 1 1 14 0 l4 16 h-22z\" fill=\"#3a6ac0\"/><\/g><\/svg>","unmatched-cobble-fog":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"uc-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1a1a24\"/><stop offset=\"1\" stop-color=\"#5a5a6a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#uc-s)\"/><g fill=\"#101018\"><path d=\"M0 300 V60 h60 v20 h20 V300Z\"/><path d=\"M220 300 V80 h20 v-20 h60 V300Z\"/><\/g><g fill=\"#e8c46a\" opacity=\".8\"><rect x=\"20\" y=\"100\" width=\"12\" height=\"16\"/><rect x=\"40\" y=\"140\" width=\"12\" height=\"16\"/><rect x=\"250\" y=\"110\" width=\"12\" height=\"16\"/><rect x=\"270\" y=\"160\" width=\"12\" height=\"16\"/><\/g><path d=\"M80 300 L120 200 H180 L220 300Z\" fill=\"#3a3a48\"/><g stroke=\"#2a2a36\" stroke-width=\"2\" fill=\"none\"><path d=\"M90 280 H210 M100 255 H200 M110 230 H190 M118 210 H182\"/><path d=\"M130 300 L140 200 M170 300 L160 200 M150 300 V200\"/><\/g><path d=\"M150 200 V110\" stroke=\"#101018\" stroke-width=\"5\"/><path d=\"M138 100 H162 L158 120 H142Z\" fill=\"#101018\"/><circle cx=\"150\" cy=\"110\" r=\"7\" fill=\"#f8d880\"/><circle cx=\"150\" cy=\"110\" r=\"40\" fill=\"#f8d880\" opacity=\".18\"/><g fill=\"#c8c8d8\" opacity=\".25\"><ellipse cx=\"80\" cy=\"230\" rx=\"110\" ry=\"16\"/><ellipse cx=\"230\" cy=\"260\" rx=\"110\" ry=\"14\"/><ellipse cx=\"150\" cy=\"180\" rx=\"140\" ry=\"10\"/><\/g><\/svg>","unmatched-witcher-realms-fall":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"wr-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#1a1410\"/><stop offset=\"1\" stop-color=\"#7a2a1a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#wr-s)\"/><g fill=\"#e0702a\" opacity=\".5\"><path d=\"M40 250 q10 -40 30 -20 q0 -30 20 -10 q10 -30 20 10z\"/><path d=\"M190 250 q10 -50 30 -20 q4 -30 22 0 q10 -20 18 20z\"/><\/g><g fill=\"#0e0a08\"><path d=\"M0 300 V230 h30 v-40 l12 -14 l12 14 v40 h20 V300Z\"/><path d=\"M200 300 V220 h20 v-50 l14 -16 l14 16 v50 h20 v-20 h12 V300Z\"/><\/g><g transform=\"rotate(35 150 150)\"><rect x=\"145\" y=\"40\" width=\"10\" height=\"170\" fill=\"#d0d4dc\"/><path d=\"M145 40 L150 24 L155 40Z\" fill=\"#d0d4dc\"/><rect x=\"128\" y=\"208\" width=\"44\" height=\"8\" rx=\"3\" fill=\"#3a2a1a\"/><rect x=\"146\" y=\"216\" width=\"8\" height=\"34\" fill=\"#5a3a22\"/><circle cx=\"150\" cy=\"254\" r=\"6\" fill=\"#8a6a3a\"/><\/g><g transform=\"rotate(-35 150 150)\"><rect x=\"145\" y=\"40\" width=\"10\" height=\"170\" fill=\"#a8acb8\"/><path d=\"M145 40 L150 24 L155 40Z\" fill=\"#a8acb8\"/><rect x=\"128\" y=\"208\" width=\"44\" height=\"8\" rx=\"3\" fill=\"#3a2a1a\"/><rect x=\"146\" y=\"216\" width=\"8\" height=\"34\" fill=\"#5a3a22\"/><circle cx=\"150\" cy=\"254\" r=\"6\" fill=\"#8a6a3a\"/><\/g><\/svg>","unmatched-witcher-steel-silver":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"ws-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0e1218\"/><stop offset=\"1\" stop-color=\"#3a4454\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#ws-s)\"/><circle cx=\"150\" cy=\"120\" r=\"80\" fill=\"#c8ccd8\" opacity=\".9\"/><circle cx=\"130\" cy=\"100\" r=\"10\" fill=\"#b0b4c0\"/><circle cx=\"180\" cy=\"140\" r=\"14\" fill=\"#b0b4c0\"/><path d=\"M0 260 Q150 240 300 260 V300 H0Z\" fill=\"#0a0c10\"/><g transform=\"rotate(35 150 150)\"><rect x=\"145\" y=\"40\" width=\"10\" height=\"170\" fill=\"#8a909c\"/><path d=\"M145 40 L150 24 L155 40Z\" fill=\"#8a909c\"/><rect x=\"128\" y=\"208\" width=\"44\" height=\"8\" rx=\"3\" fill=\"#3a2a1a\"/><rect x=\"146\" y=\"216\" width=\"8\" height=\"34\" fill=\"#5a3a22\"/><circle cx=\"150\" cy=\"254\" r=\"6\" fill=\"#8a6a3a\"/><\/g><g transform=\"rotate(-35 150 150)\"><rect x=\"145\" y=\"40\" width=\"10\" height=\"170\" fill=\"#f4f6fa\"/><path d=\"M145 40 L150 24 L155 40Z\" fill=\"#f4f6fa\"/><rect x=\"128\" y=\"208\" width=\"44\" height=\"8\" rx=\"3\" fill=\"#3a2a1a\"/><rect x=\"146\" y=\"216\" width=\"8\" height=\"34\" fill=\"#5a3a22\"/><circle cx=\"150\" cy=\"254\" r=\"6\" fill=\"#8a6a3a\"/><\/g><\/svg>","feed-the-kraken":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"fk-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0a1a24\"/><stop offset=\"1\" stop-color=\"#1e4a5a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#fk-s)\"/><circle cx=\"240\" cy=\"50\" r=\"16\" fill=\"#d8e8e8\" opacity=\".7\"/><g fill=\"#3a1e1a\"><path d=\"M90 170 H210 L190 200 H110Z\"/><rect x=\"146\" y=\"70\" width=\"6\" height=\"100\"/><\/g><path d=\"M152 76 Q190 100 152 130Z\" fill=\"#e8e0d0\"/><path d=\"M146 80 Q110 104 146 132Z\" fill=\"#d8d0c0\"/><path d=\"M152 70 l20 6 l-20 6z\" fill=\"#1a1a1a\"/><path d=\"M0 200 Q40 185 80 200 T160 200 T240 200 T320 200 V300 H0Z\" fill=\"#0e3a4a\"/><g fill=\"none\" stroke=\"#c04a6a\" stroke-width=\"16\" stroke-linecap=\"round\"><path d=\"M40 300 C40 230 70 200 60 160 C55 140 70 130 80 140\"/><path d=\"M260 300 C260 220 230 200 240 150 C245 130 228 122 220 134\"/><path d=\"M200 300 C210 260 250 250 250 230\"/><\/g><g fill=\"#f0a0b0\"><circle cx=\"48\" cy=\"250\" r=\"3\"/><circle cx=\"54\" cy=\"220\" r=\"3\"/><circle cx=\"60\" cy=\"190\" r=\"3\"/><circle cx=\"252\" cy=\"250\" r=\"3\"/><circle cx=\"246\" cy=\"220\" r=\"3\"/><circle cx=\"242\" cy=\"190\" r=\"3\"/><\/g><path d=\"M0 240 Q50 225 100 240 T200 240 T300 240 V300 H0Z\" fill=\"#0a2a36\"/><\/svg>","the-white-castle":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"300\" height=\"300\" fill=\"#f4ece0\"/><circle cx=\"210\" cy=\"90\" r=\"50\" fill=\"#c84a3a\"/><g fill=\"#fbf8f2\" stroke=\"#2a2a30\" stroke-width=\"3\"><rect x=\"90\" y=\"190\" width=\"120\" height=\"50\"/><rect x=\"105\" y=\"145\" width=\"90\" height=\"40\"/><rect x=\"120\" y=\"105\" width=\"60\" height=\"34\"/><\/g><g fill=\"#2a2a30\"><path d=\"M70 195 Q150 175 230 195 L220 185 Q150 170 80 185Z\"/><path d=\"M88 150 Q150 132 212 150 L202 140 Q150 126 98 140Z\"/><path d=\"M104 110 Q150 92 196 110 L186 100 Q150 86 114 100Z\"/><path d=\"M130 100 L150 76 L170 100Z\"/><\/g><g fill=\"#2a2a30\"><rect x=\"110\" y=\"205\" width=\"10\" height=\"12\"/><rect x=\"140\" y=\"205\" width=\"10\" height=\"12\"/><rect x=\"170\" y=\"205\" width=\"10\" height=\"12\"/><rect x=\"125\" y=\"158\" width=\"8\" height=\"10\"/><rect x=\"165\" y=\"158\" width=\"8\" height=\"10\"/><\/g><path d=\"M40 240 H260 L280 270 H20Z\" fill=\"#8a8a8a\"/><g><rect x=\"34\" y=\"250\" width=\"26\" height=\"26\" rx=\"5\" fill=\"#fff\" stroke=\"#2a2a30\" stroke-width=\"2\"/><circle cx=\"47\" cy=\"263\" r=\"3\" fill=\"#c84a3a\"/><rect x=\"240\" y=\"250\" width=\"26\" height=\"26\" rx=\"5\" fill=\"#2a2a30\"/><g fill=\"#fff\"><circle cx=\"247\" cy=\"257\" r=\"2.5\"/><circle cx=\"259\" cy=\"269\" r=\"2.5\"/><circle cx=\"253\" cy=\"263\" r=\"2.5\"/><\/g><\/g><\/svg>","galaxy-trucker":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"gt-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0a1230\"/><stop offset=\"1\" stop-color=\"#1a2a5a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#gt-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"140\" cy=\"80\" r=\"1.2\"/><circle cx=\"126\" cy=\"176\" r=\"1.2\"/><circle cx=\"123\" cy=\"170\" r=\"1.2\"/><circle cx=\"74\" cy=\"24\" r=\"2.2\"/><circle cx=\"117\" cy=\"196\" r=\"1.5\"/><circle cx=\"23\" cy=\"116\" r=\"1.2\"/><circle cx=\"15\" cy=\"76\" r=\"1.2\"/><circle cx=\"51\" cy=\"73\" r=\"1.8\"/><circle cx=\"231\" cy=\"41\" r=\"1.5\"/><circle cx=\"190\" cy=\"65\" r=\"1.8\"/><circle cx=\"289\" cy=\"150\" r=\"1.8\"/><circle cx=\"194\" cy=\"116\" r=\"1.5\"/><circle cx=\"68\" cy=\"94\" r=\"2.2\"/><circle cx=\"142\" cy=\"182\" r=\"1.8\"/><circle cx=\"291\" cy=\"162\" r=\"1.2\"/><circle cx=\"233\" cy=\"179\" r=\"1.8\"/><circle cx=\"282\" cy=\"51\" r=\"1.5\"/><circle cx=\"111\" cy=\"51\" r=\"2.2\"/><circle cx=\"190\" cy=\"70\" r=\"1.5\"/><circle cx=\"243\" cy=\"73\" r=\"2.2\"/><circle cx=\"151\" cy=\"107\" r=\"1.2\"/><circle cx=\"259\" cy=\"146\" r=\"1.2\"/><circle cx=\"128\" cy=\"55\" r=\"1.5\"/><circle cx=\"75\" cy=\"24\" r=\"1.8\"/><circle cx=\"245\" cy=\"105\" r=\"1\"/><circle cx=\"225\" cy=\"17\" r=\"1.2\"/><circle cx=\"80\" cy=\"133\" r=\"1.8\"/><circle cx=\"137\" cy=\"46\" r=\"1.8\"/><circle cx=\"136\" cy=\"200\" r=\"1.5\"/><circle cx=\"111\" cy=\"186\" r=\"1.5\"/><\/g><g stroke=\"#0a1230\" stroke-width=\"3\"><rect x=\"120\" y=\"100\" width=\"30\" height=\"30\" fill=\"#e8c21e\"/><rect x=\"90\" y=\"130\" width=\"30\" height=\"30\" fill=\"#5ab8e0\"/><rect x=\"120\" y=\"130\" width=\"30\" height=\"30\" fill=\"#e8e8e8\"/><rect x=\"150\" y=\"130\" width=\"30\" height=\"30\" fill=\"#c03a3a\"/><rect x=\"180\" y=\"130\" width=\"30\" height=\"30\" fill=\"#8ad070\"/><rect x=\"120\" y=\"160\" width=\"30\" height=\"30\" fill=\"#e8e8e8\"/><rect x=\"150\" y=\"160\" width=\"30\" height=\"30\" fill=\"#5ab8e0\"/><rect x=\"90\" y=\"160\" width=\"30\" height=\"30\" fill=\"#e8c21e\"/><rect x=\"150\" y=\"100\" width=\"30\" height=\"30\" fill=\"#b88ae0\"/><rect x=\"120\" y=\"190\" width=\"30\" height=\"30\" fill=\"#c03a3a\"/><\/g><g fill=\"#3a3a48\"><path d=\"M108 220 h24 l-4 14 h-16z\"/><path d=\"M78 190 h24 l-4 14 h-16z\"/><\/g><g fill=\"#ffb347\"><path d=\"M112 234 l8 22 l8 -22z\"/><path d=\"M82 204 l8 18 l8 -18z\"/><\/g><path d=\"M180 100 l30 -10 v20z\" fill=\"#9a9aa8\"/><g fill=\"#7a6a5a\"><circle cx=\"240\" cy=\"230\" r=\"22\"/><circle cx=\"60\" cy=\"60\" r=\"12\"/><circle cx=\"260\" cy=\"70\" r=\"9\"/><\/g><g fill=\"#5a4a3a\"><circle cx=\"232\" cy=\"222\" r=\"5\"/><circle cx=\"248\" cy=\"236\" r=\"4\"/><\/g><\/svg>","the-wolves":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"wo-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#0e1424\"/><stop offset=\"1\" stop-color=\"#3a4a6a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#wo-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"62\" cy=\"140\" r=\"1.2\"/><circle cx=\"146\" cy=\"71\" r=\"1.5\"/><circle cx=\"45\" cy=\"121\" r=\"1.5\"/><circle cx=\"246\" cy=\"107\" r=\"1.8\"/><circle cx=\"68\" cy=\"73\" r=\"1.2\"/><circle cx=\"169\" cy=\"97\" r=\"1.5\"/><circle cx=\"192\" cy=\"138\" r=\"1.2\"/><circle cx=\"90\" cy=\"76\" r=\"1.2\"/><circle cx=\"13\" cy=\"23\" r=\"1\"/><circle cx=\"180\" cy=\"13\" r=\"1\"/><circle cx=\"148\" cy=\"58\" r=\"1.8\"/><circle cx=\"214\" cy=\"118\" r=\"2.2\"/><circle cx=\"56\" cy=\"34\" r=\"2.2\"/><circle cx=\"194\" cy=\"52\" r=\"1\"/><circle cx=\"257\" cy=\"137\" r=\"1.2\"/><circle cx=\"146\" cy=\"121\" r=\"2.2\"/><circle cx=\"119\" cy=\"130\" r=\"1.5\"/><circle cx=\"264\" cy=\"71\" r=\"1\"/><circle cx=\"70\" cy=\"28\" r=\"1.5\"/><circle cx=\"151\" cy=\"36\" r=\"1\"/><\/g><circle cx=\"170\" cy=\"100\" r=\"54\" fill=\"#e8ecf4\"/><g stroke=\"#2a3448\" stroke-width=\"2\"><path d=\"M0 236 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#3a5a3a\"/><path d=\"M40 236 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#5a6a7a\"/><path d=\"M80 236 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#3a5a3a\"/><path d=\"M120 236 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#c8d4e0\"/><path d=\"M160 236 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#3a5a3a\"/><path d=\"M200 236 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#5a6a7a\"/><path d=\"M240 236 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#3a5a3a\"/><path d=\"M280 236 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#5a6a7a\"/><path d=\"M20 270 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#5a6a7a\"/><path d=\"M60 270 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#c8d4e0\"/><path d=\"M100 270 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#3a5a3a\"/><path d=\"M140 270 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#5a6a7a\"/><path d=\"M180 270 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#3a5a3a\"/><path d=\"M220 270 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#c8d4e0\"/><path d=\"M260 270 l20 -12 l20 12 v22 l-20 12 l-20 -12z\" fill=\"#3a5a3a\"/><\/g><path d=\"M108 236 C106 206 112 186 124 172 C120 160 120 148 124 138 L104 112 L112 110 L100 96 L116 104 L128 112 L130 96 L138 112 C146 120 150 132 148 146 C164 162 180 188 190 214 L196 236Z\" fill=\"#0e1424\"/><path d=\"M150 236 C150 222 158 214 168 214\" stroke=\"#0e1424\" stroke-width=\"10\" fill=\"none\" stroke-linecap=\"round\"/><\/svg>","blood-rage":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"br-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#2a0a0e\"/><stop offset=\"1\" stop-color=\"#a0302a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#br-s)\"/><circle cx=\"150\" cy=\"110\" r=\"60\" fill=\"#e8a070\" opacity=\".6\"/><g fill=\"#1a0608\"><path d=\"M0 200 L60 120 L110 180 L160 110 L220 170 L270 120 L300 160 V300 H0Z\"/><\/g><path d=\"M40 240 H260 Q250 270 200 272 H100 Q50 270 40 240Z\" fill=\"#3a1a10\"/><path d=\"M40 240 Q30 220 44 210 Q50 226 56 240Z\" fill=\"#3a1a10\"/><path d=\"M260 240 Q270 220 256 210 Q250 226 244 240Z\" fill=\"#3a1a10\"/><g fill=\"#c0392b\"><circle cx=\"80\" cy=\"248\" r=\"8\"/><circle cx=\"104\" cy=\"248\" r=\"8\"/><circle cx=\"128\" cy=\"248\" r=\"8\"/><circle cx=\"152\" cy=\"248\" r=\"8\"/><circle cx=\"176\" cy=\"248\" r=\"8\"/><circle cx=\"200\" cy=\"248\" r=\"8\"/><circle cx=\"224\" cy=\"248\" r=\"8\"/><\/g><path d=\"M150 240 V150\" stroke=\"#3a1a10\" stroke-width=\"5\"/><path d=\"M110 160 H190 L182 220 H118Z\" fill=\"#e8d0b0\"/><g stroke=\"#a0302a\" stroke-width=\"4\" fill=\"none\"><path d=\"M140 175 L150 205 L160 175\"/><path d=\"M150 168 V182\"/><\/g><path d=\"M0 272 Q150 258 300 272 V300 H0Z\" fill=\"#14060a\"/><\/svg>","cosmic-encounter":"<svg viewBox=\"0 0 300 300\" xmlns=\"http://www.w3.org/2000/svg\"><defs><linearGradient id=\"ce-s\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#140e2a\"/><stop offset=\"1\" stop-color=\"#3a1a6a\"/><\/linearGradient><\/defs><rect width=\"300\" height=\"300\" fill=\"url(#ce-s)\"/><g fill=\"#fff\" opacity=\"0.8\"><circle cx=\"114\" cy=\"8\" r=\"2.2\"/><circle cx=\"26\" cy=\"46\" r=\"1.2\"/><circle cx=\"16\" cy=\"20\" r=\"1.2\"/><circle cx=\"196\" cy=\"67\" r=\"1\"/><circle cx=\"181\" cy=\"125\" r=\"1.5\"/><circle cx=\"151\" cy=\"106\" r=\"1.5\"/><circle cx=\"184\" cy=\"64\" r=\"1.2\"/><circle cx=\"189\" cy=\"86\" r=\"1.2\"/><circle cx=\"164\" cy=\"192\" r=\"2.2\"/><circle cx=\"223\" cy=\"65\" r=\"2.2\"/><circle cx=\"241\" cy=\"113\" r=\"1.8\"/><circle cx=\"48\" cy=\"124\" r=\"2.2\"/><circle cx=\"192\" cy=\"118\" r=\"2.2\"/><circle cx=\"169\" cy=\"183\" r=\"1.8\"/><circle cx=\"215\" cy=\"22\" r=\"1.8\"/><circle cx=\"17\" cy=\"56\" r=\"1.2\"/><circle cx=\"281\" cy=\"50\" r=\"2.2\"/><circle cx=\"16\" cy=\"79\" r=\"2.2\"/><circle cx=\"261\" cy=\"44\" r=\"1\"/><circle cx=\"67\" cy=\"107\" r=\"1\"/><circle cx=\"45\" cy=\"125\" r=\"2.2\"/><circle cx=\"159\" cy=\"108\" r=\"2.2\"/><circle cx=\"126\" cy=\"51\" r=\"2.2\"/><circle cx=\"264\" cy=\"96\" r=\"1\"/><circle cx=\"128\" cy=\"85\" r=\"1.5\"/><circle cx=\"92\" cy=\"166\" r=\"1.5\"/><circle cx=\"206\" cy=\"127\" r=\"1.5\"/><circle cx=\"234\" cy=\"24\" r=\"1.5\"/><circle cx=\"250\" cy=\"42\" r=\"1\"/><circle cx=\"260\" cy=\"105\" r=\"1.8\"/><\/g><circle cx=\"60\" cy=\"70\" r=\"26\" fill=\"#e05a8a\"/><circle cx=\"240\" cy=\"60\" r=\"20\" fill=\"#5ab8e0\"/><circle cx=\"250\" cy=\"220\" r=\"30\" fill=\"#8ad070\"/><circle cx=\"50\" cy=\"230\" r=\"22\" fill=\"#f6d36a\"/><circle cx=\"150\" cy=\"260\" r=\"14\" fill=\"#f08a2a\"/><g fill=\"none\" stroke=\"#e8e0f8\" stroke-width=\"2\" opacity=\".35\" stroke-dasharray=\"4 6\"><path d=\"M60 70 L150 140 L240 60\"/><path d=\"M50 230 L150 140 L250 220\"/><\/g><g transform=\"translate(150 140)\"><ellipse rx=\"44\" ry=\"13\" fill=\"#c8ccd8\"/><path d=\"M-22 -4 a22 20 0 0 1 44 0z\" fill=\"#9ad8f8\"/><ellipse rx=\"44\" ry=\"13\" fill=\"none\" stroke=\"#8a8ea0\" stroke-width=\"2\"/><g fill=\"#f6d36a\"><circle cx=\"-26\" cy=\"3\" r=\"3\"/><circle cx=\"0\" cy=\"6\" r=\"3\"/><circle cx=\"26\" cy=\"3\" r=\"3\"/><\/g><\/g><path d=\"M135 153 L120 200 H180 L165 153Z\" fill=\"#f6d36a\" opacity=\".2\"/><\/svg>"};
+
+const $ = s => document.querySelector(s);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+};
+const state = { genre: "", avail: "", loc: "", view: store.get("view") === "grid" ? "grid" : "list", kind: "", genres: new Set(), players: new Set(), time: "", weight: "", sort: "rating", q: "", open: new Set(), expOpen: new Set() };
+
+
+function plural(n, a, b, c) { const m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 10 || h >= 20) ? b : c; }
+const fmt = n => n.toFixed(1).replace(".", ",");
+const ico = {
+  users: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3 3 0 0 1 0 6M21 20c0-2.6-1.6-4.8-4-5.6"/></svg>',
+  clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  chev: '<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>'
+};
+function weightBars(w) {
+  const on = Math.round(w);
+  return '<span class="weight" title="Сложность ' + fmt(w) + ' из 5">' +
+    [1,2,3,4,5].map(i => '<u class="' + (i <= on ? "on" : "") + '"></u>').join("") + '</span>';
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
+
+// Ссылки: [id на BGG, адрес на Тесере]; null — откроется поиск
+const LINKS = {
+  "forbidden-stars": [175155, "Forbidden-Stars"], "revive": [332772, "revive"], "speakeasy": [375459, "speakeasy-2024"],
+  "fief-england": [379409, "fief-england"], "arcs": [359871, "arcs"], "sweet-lands": [425445, "sweet-lands"],
+  "galactic-cruise": [391137, "galactic-cruise"], "fs-forgotten-worlds": [null, "forbidden-stars-forgotten-worlds"],
+  "arcs-blighted-reach": [363757, "arcs-blighted-reach-campaign-expansion"], "tainted-grail": [264220, "tainted-grail-the-fall-of-avalon"],
+  "tg-age-of-legends-last-knight": [274795, "tainted-grail-age-of-legends-last-knight-campaigns"],
+  "tg-red-death": [267408, "tainted-grail-the-fall-of-avalon-red-death-expansion"], "kings-of-ruin": [360366, "tainted-grail-kings-of-ruin"],
+  "eleven": [329716, "eleven-football-manager-board-game"], "ascension": [69789, "ascension"], "frostpunk": [311988, "frostpunk-the-board-game"],
+  "pest": [353572, "pest-ag"], "rallyman-gt": [256589, "rallyman-gt"], "defenders-of-the-wild": [372649, "defenders-of-the-wild"],
+  "age-of-galaxy": [330950, "aog"], "beast": [281549, "beast"], "beast-shattered-isles": [385276, "beast-shattered-isles"],
+  "beast-great-hunt": [399046, "beast-the-great-hunt"], "ascendancy": [258295, "ascendancy"], "onward": [431929, "onward"],
+  "ironwood": [407343, "ironwood"], "barrage": [224517, "barrage"], "brazil-imperial": [249277, "brazil-imperial"], "root": [237182, "root"],
+  "ascension-tactics": [304531, "Ascension-Tactics"], "endeavor-deep-sea": [367966, "endeavor-deep-sea"], "dune-imperium": [316554, "dune-imperium"],
+  "dune-rise-of-ix": [342031, null], "dune-immortality": [367466, "dune-imperium-immortality"], "dune-bloodlines": [426129, "dune-imperium-bloodlines"],
+  "dune-uprising": [397598, "dune-imperium-uprising"], "hegemony": [321608, "hegemony-lead-your-class-to-victory"],
+  "tm-ares": [328871, null], "the-gang": [411567, "the-gang"], "circadians-chaos-order": [329226, "circadians-chaos-order"],
+  "welcome-to": [233867, "Welcome-To"], "flip-7": [420087, "Flip-7"], "secret-hitler": [188834, "secret-hitler"],
+  "five-tribes": [157354, "5tribes"], "unmatched-cobble-fog": [294484, "UnmatchedCF"],
+  "unmatched-witcher-realms-fall": [411861, "unmatched-the-witcher-gibel-korolevstv"],
+  "unmatched-witcher-steel-silver": [411860, "unmatched-the-witcher-stal-i-cerebro"],
+  "feed-the-kraken": [271601, "feed-the-kraken"], "the-white-castle": [371942, "the-white-castle"],
+  "galaxy-trucker": [336794, "1galaxy-trucker"], "the-wolves": [368058, "the-solves"], "blood-rage": [170216, "blood-rage"],
+  "cosmic-encounter": [39463, "1cosmic-encounter"],
+  "sea-salt-paper": [367220, "sea-salt-paper"], "ticket-to-ride-europe": [14996, "ticket-ride-europe"], "7-wonders-duel": [173346, "7-wonders-duel"],
+  "android-netrunner": [124742, "Android-Netrunner"], "under-falling-skies": [306735, "under-falling-skies"]
+};
+const bggUrl = g => { const id = (LINKS[g.id] || [])[0]; return id ? "https://boardgamegeek.com/boardgame/" + id
+  : "https://boardgamegeek.com/geeksearch.php?action=search&objecttype=boardgame&q=" + encodeURIComponent(g.orig && /[a-z]/i.test(g.orig) ? g.orig : g.name); };
+const teseraUrl = g => { const sl = (LINKS[g.id] || [])[1]; return sl ? "https://tesera.ru/game/" + sl + "/"
+  : "https://yandex.ru/search/?text=" + encodeURIComponent("site:tesera.ru " + g.name); };
+
+// Быстрые фильтры: дуэль, битва, евро (дополнения наследуют жанр базы)
+const GENRES = {
+  "ironwood": ["duel", "battle"],
+  "forbidden-stars": ["battle"], "arcs": ["battle"], "fief-england": ["battle"], "onward": ["battle"],
+  "beast": ["battle"], "defenders-of-the-wild": ["battle"], "ascendancy": ["battle", "euro"],
+  "revive": ["euro"], "speakeasy": ["euro"], "sweet-lands": ["euro"], "galactic-cruise": ["euro"],
+  "pest": ["euro"], "eleven": ["euro"], "age-of-galaxy": ["euro"], "frostpunk": ["euro", "coop"],
+  "tainted-grail": ["coop"], "kings-of-ruin": ["coop"],
+  "barrage": ["euro"], "brazil-imperial": ["euro"], "root": ["battle"], "ascension-tactics": ["battle", "coop"],
+  "endeavor-deep-sea": ["euro"], "dune-imperium": ["euro"], "dune-uprising": ["euro"], "hegemony": ["euro"],
+  "tm-ares": ["euro"], "the-gang": ["coop", "party"], "circadians-chaos-order": ["battle"],
+  "five-tribes": ["euro"], "the-white-castle": ["euro"], "unmatched-cobble-fog": ["duel", "battle"],
+  "unmatched-witcher-realms-fall": ["duel", "battle"], "unmatched-witcher-steel-silver": ["duel", "battle"],
+  "the-wolves": ["battle"], "blood-rage": ["battle"], "cosmic-encounter": ["battle"],
+  "flip-7": ["party"], "secret-hitler": ["party"], "feed-the-kraken": ["party"], "welcome-to": ["party"], "galaxy-trucker": ["party"],
+  "7-wonders-duel": ["duel"], "android-netrunner": ["duel"], "ticket-to-ride-europe": ["party"]
+};
+GENRES["defenders-of-the-wild"].push("coop");
+// Где лежит игра: "me" (у меня) или "away" (вне дома); по умолчанию у меня
+const LOC_NAMES = { me: "У меня", away: "Вне дома" };
+const locOf = g => g.loc || (g.base && (GAMES.find(x => x.id === g.base) || {}).loc) || "me";
+// «Соло» — все игры, где можно играть одному
+const genresOf = g => {
+  const b = g.base ? GAMES.find(x => x.id === g.base) || g : g;
+  const gs = (GENRES[b.id] || []).slice();
+  if (b.pmin === 1) gs.push("solo");
+  return gs;
+};
+
+// Статусы из файла games.csv рядом со страницей: «активна» — показывать, «нет» — скрыть
+const INACTIVE = new Set();
+const isActive = g => !INACTIVE.has(g.id) && !(g.base && INACTIVE.has(g.base));
+function parseStatus(text) {
+  INACTIVE.clear();
+  text.replace(/^\uFEFF/, "").split(/\r?\n/).forEach((line, i) => {
+    const cols = line.split(";").map(x => x.trim());
+    if (i === 0 && /^id$/i.test(cols[0])) return;
+    const id = cols[0], st = (cols[cols.length - 1] || "").toLowerCase();
+    if (id && /^(нет|не активна|неактивна|no|0)$/.test(st)) INACTIVE.add(id);
+  });
+}
+function loadStatus() {
+  fetch("games.csv", { cache: "no-store" })
+    .then(r => r.ok ? r.text() : Promise.reject())
+    .then(t => { parseStatus(t); render(); })
+    .catch(() => {});
+}
+
+function matches(g) {
+  if (!isActive(g)) return false;
+  if (state.genre && !genresOf(g).includes(state.genre)) return false;
+  if (state.avail === "shelf" && g.coming) return false;
+  if (state.avail === "coming" && !g.coming) return false;
+  if (state.loc && locOf(g) !== state.loc) return false;
+  for (const p of state.players) if (p < g.pmin || p > g.pmax) return false;
+  if (state.time === "90" && g.tmin > 90) return false;
+  if (state.time === "120" && g.tmin > 120) return false;
+  if (state.time === "999" && g.tmax < 120) return false;
+  if (state.weight && g.weight == null) return false;
+  if (state.weight === "mid" && g.weight >= 3.5) return false;
+  if (state.weight === "heavy" && g.weight < 3.5) return false;
+  if (state.q) {
+    const hay = [g.name, g.orig, ...g.tags].join(" ").toLowerCase();
+    if (!hay.includes(state.q)) return false;
+  }
+  return true;
+}
+const sorters = {
+  rating: (a, b) => (b.bgg ?? 0) - (a.bgg ?? 0) || (a.rank || 1e9) - (b.rank || 1e9),
+  name: (a, b) => a.name.localeCompare(b.name, "ru"),
+  weight: (a, b) => (b.weight ?? 0) - (a.weight ?? 0),
+  year: (a, b) => b.year - a.year
+};
+
+function card(g, nested) {
+  const open = state.open.has(g.id);
+  const plus = g.base ? '<span class="plus">+</span>' : '';
+  const cover = COVERS[g.id]
+      ? '<div class="art" role="img" aria-label="' + esc(g.name) + '">' + COVERS[g.id] + plus + '</div>'
+      : '<div class="ph" style="background:linear-gradient(140deg,' + g.hue[0] + ',' + g.hue[1] + ')">' +
+          '<div>' + esc(g.initials) + '</div>' + plus + '</div>';
+  const baseGame = g.base ? GAMES.find(x => x.id === g.base) : null;
+  const exps = GAMES.filter(x => x.base === g.id);
+  const time = g.tmin === g.tmax ? g.tmin : g.tmin + "–" + g.tmax;
+  return '<article class="card' + (open ? " open" : "") + (nested ? " nested" : "") + (g.coming ? " coming" : "") + '" id="g-' + g.id + '">' +
+    '<button class="head" aria-expanded="' + open + '" aria-controls="b-' + g.id + '" data-toggle="' + g.id + '">' +
+      '<div class="cover">' + cover + (g.coming ? '<span class="ribbon">В пути</span>' : '') + '</div>' +
+      '<div class="info">' +
+        '<div class="titlerow"><div>' + (g.coming ? '<span class="badge transit">Едет ко мне</span> ' : '') + (state.view === "grid" && !g.base && locOf(g) === "away" ? '<span class="badge loc">Вне дома</span> ' : '') + (g.base ? '<span class="badge">Дополнение</span>' : '') + '<h2 class="name">' + esc(g.name) + '</h2>' +
+          '<div class="orig">' + esc(g.orig) + ' · ' + g.year + '</div></div>' +
+          '<div class="rating"><b' + (g.bgg == null ? ' class="none">—' : '>' + fmt(g.bgg)) + '</b><span>' + (g.ratingSrc ? g.ratingSrc.toUpperCase() : 'BGG') + '</span></div></div>' +
+        '<div class="meta"><i>' + ico.users + g.pmin + '–' + g.pmax + '</i><i>' + ico.clock + time + '<span class="u"> мин</span></i>' +
+          (g.weight != null ? '<i>' + weightBars(g.weight) + fmt(g.weight) + '</i>' : '') +
+          (exps.length ? '<i class="expcount">+' + exps.length + ' доп.</i>' : '') + '</div>' +
+        '<div class="more">' + (open ? "Свернуть" : "Подробнее") + ico.chev + '</div>' +
+      '</div>' +
+    '</button>' +
+    '<div class="body" id="b-' + g.id + '"' + (open ? "" : " hidden") + '>' +
+      '<p>' + esc(g.desc) + '</p>' +
+      '<div class="tags">' + g.tags.map(t => '<span class="tag">' + esc(t) + '</span>').join("") + '</div>' +
+      '<dl class="facts">' +
+        (baseGame ? '<dt>Нужна база</dt><dd><button class="expof" data-goto="' + baseGame.id + '">' + esc(baseGame.name) + '</button></dd>' : '') +
+        (exps.length && !(state.view === "grid" && !nested) ? '<dt>Дополнения</dt><dd>' + exps.map(x => '<button class="expof" data-goto="' + x.id + '">' + esc(x.name) + '</button>').join(', ') + '</dd>' : '') +
+        (g.base ? (g.ratingSrc ? '<dt>Оценка</dt><dd>' + fmt(g.bgg) + ' на ' + g.ratingSrc + ' (на BGG нет)</dd>' : '') : '<dt>Место в BGG</dt><dd>' + (g.rank ? '#' + g.rank + ' в общем рейтинге' : 'нет данных') + '</dd>') +
+        (state.view === "grid" && !g.base ? '<dt>Где</dt><dd>' + LOC_NAMES[locOf(g)] + (g.coming ? ' (ещё в пути)' : '') + '</dd>' : '') +
+      '</dl>' +
+      '<div class="actions">' +
+        '<a class="btn primary" href="' + bggUrl(g) + '" target="_blank" rel="noopener">Открыть на BGG</a>' +
+        '<a class="btn" href="' + teseraUrl(g) + '" target="_blank" rel="noopener">Открыть на Тесере</a>' +
+      '</div>' +
+      (state.view === "grid" && !nested && exps.length ? '<div class="expbox"><div class="expbox-h">Дополнения · ' + exps.length + '</div>' +
+        exps.map(x => card(x, true)).join("") + '</div>' : '') +
+    '</div>' +
+  '</article>';
+}
+
+// Дополнения ставим сразу под их базовой игрой, если она тоже в выдаче
+function arrange(sorted) {
+  const shown = new Set(sorted.map(g => g.id));
+  const out = [];
+  for (const g of sorted) {
+    if (g.base && shown.has(g.base)) continue;
+    out.push({ ...g, nested: false });
+    if (g.base) continue;
+    const exps = sorted.filter(x => x.base === g.id);
+    if (!exps.length) continue;
+    if (state.view === "grid") {
+      // В плитках дополнения показываются внутри развёрнутой карточки игры
+      continue;
+    }
+    const open = state.expOpen.has(g.id) || !!state.q;
+    out.push({ toggle: true, base: g.id, baseName: g.name, coming: g.coming, n: exps.length, open, names: exps.map(x => x.name) });
+    if (open) exps.forEach(x => out.push({ ...x, nested: true }));
+  }
+  return out;
+}
+
+function item(g) {
+  if (!g.toggle) return card(g, g.nested);
+  const label = g.n + " " + plural(g.n, "дополнение", "дополнения", "дополнений");
+  return '<button class="exptoggle' + (g.open ? " open" : "") + (g.coming ? " coming" : "") + '" data-exp="' + g.base + '" aria-expanded="' + g.open + '">' +
+    '<span class="et-l"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>' + label + '</span>' +
+    (g.open ? '<span class="et-r">Свернуть</span>' : '<span class="et-r">' + (state.view === "grid" ? "к игре «" + esc(g.baseName) + "»" : esc(g.names.join(" · "))) + '</span>') +
+  '</button>';
+}
+
+function setFilters(open) {
+  $("#filters").hidden = !open;
+  $("#ftoggle").setAttribute("aria-expanded", open);
+  store.set("filtersOpen", open ? "1" : "0");
+}
+setFilters(store.get("filtersOpen") === "1");
+$("#ftoggle").addEventListener("click", () => setFilters($("#filters").hidden));
+
+function render() {
+  $("#list").classList.toggle("grid", state.view === "grid");
+  ["genre", "avail", "loc", "time", "weight"].forEach(id => $("#" + id).classList.toggle("on", !!state[id]));
+  const nf = ["genre", "avail", "loc", "time", "weight"].filter(id => state[id]).length + (state.players.size ? 1 : 0);
+  $("#fcount").hidden = !nf; $("#fcount").textContent = nf;
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === state.view));
+  const sorted = GAMES.filter(matches).sort(sorters[state.sort]);
+  const coming = arrange(sorted.filter(g => g.coming));
+  const mine = arrange(sorted.filter(g => !g.coming && locOf(g) === "me"));
+  const away = arrange(sorted.filter(g => !g.coming && locOf(g) === "away"));
+  const groups = [mine, away, coming].filter(x => x.length).length;
+  const list = sorted;
+  const truck = '<svg viewBox="0 0 24 24"><path d="M2 6h11v10H2zM13 10h4l4 4v2h-8z"/><circle cx="6" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>';
+  const head = (cls, icon, t, n) => '<div class="section-h ' + cls + '">' + icon + t + ' <b>' + n + '</b></div>';
+  let html = "";
+  const home = '<svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3z"/><path d="M9 20v-6h6v6"/></svg>';
+  const user = '<svg viewBox="0 0 24 24"><path d="M14 4H5v16h9"/><path d="M10 12h10M17 8l4 4-4 4"/></svg>';
+  if (mine.length) html += (groups > 1 ? head("", home, "У меня", mine.filter(g => !g.toggle).length) : "") + mine.map(item).join("");
+  if (away.length) html += (groups > 1 ? head("away", user, "Вне дома", away.filter(g => !g.toggle).length) : "") + away.map(item).join("");
+  if (coming.length) html += head("transit", truck, "Едут ко мне", coming.filter(g => !g.toggle).length) + coming.map(item).join("");
+  $("#list").innerHTML = list.length ? html
+    : '<div class="empty">Под эти фильтры ничего не подходит.<br><button class="btn" id="reset" style="margin-top:12px">Сбросить фильтры</button></div>';
+  const ACT = GAMES.filter(isActive);
+  const homeG = ACT.filter(g => !g.coming), nb = homeG.filter(g => !g.base).length, ne = homeG.length - nb;
+  const nc = ACT.length - homeG.length;
+  $("#count").innerHTML = (list.length === ACT.length ? "" : list.length + " из " + ACT.length + "<br>") +
+    nb + " " + plural(nb, "игра", "игры", "игр") + (ne ? " + " + ne + " доп." : "") + (nc ? '<br><span style="color:var(--transit)">' + nc + ' в пути</span>' : "");
+}
+
+document.addEventListener("click", e => {
+  const go = e.target.closest("[data-goto]");
+  if (go) {
+    const id = go.dataset.goto;
+    resetFilters();
+    const tg = GAMES.find(x => x.id === id);
+    if (tg && tg.base) { state.expOpen.add(tg.base); if (state.view === "grid") state.open.add(tg.base); }
+    state.open.add(id); render();
+    const el = document.getElementById("g-" + id);
+    if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1400); }
+    return;
+  }
+  const vw = e.target.closest("[data-view]");
+  if (vw) { if (state.view !== vw.dataset.view) state.open.clear(); state.view = vw.dataset.view; store.set("view", state.view); render(); return; }
+  const so = e.target.closest("[data-sort]");
+  if (so) {
+    state.sort = so.dataset.sort;
+    document.querySelectorAll("[data-sort]").forEach(b => b.setAttribute("aria-pressed", b === so));
+    render(); return;
+  }
+  const ex = e.target.closest("[data-exp]");
+  if (ex) {
+    const id = ex.dataset.exp;
+    state.expOpen.has(id) ? state.expOpen.delete(id) : state.expOpen.add(id);
+    render(); return;
+  }
+  const t = e.target.closest("[data-toggle]");
+  if (t) {
+    const id = t.dataset.toggle;
+    state.open.has(id) ? state.open.delete(id) : state.open.add(id);
+    render(); return;
+  }
+  const p = e.target.closest("[data-players]");
+  if (p) {
+    const n = +p.dataset.players;
+    state.players.has(n) ? state.players.delete(n) : state.players.add(n);
+    p.setAttribute("aria-pressed", state.players.has(n));
+    render(); return;
+  }
+  if (e.target.id === "reset") {
+    resetFilters();
+    render();
+  }
+});
+$("#q").addEventListener("input", e => { state.q = e.target.value.trim().toLowerCase(); render(); });
+["genre", "avail", "loc"].forEach(id => $("#" + id).addEventListener("change", e => { state[id] = e.target.value; render(); }));
+function resetFilters() {
+  state.players.clear(); state.q = state.time = state.weight = state.genre = state.avail = state.loc = "";
+  document.querySelectorAll("[data-players]").forEach(b => b.setAttribute("aria-pressed", "false"));
+  ["q", "time", "weight", "genre", "avail", "loc"].forEach(id => { $("#" + id).value = ""; });
+}
+$("#time").addEventListener("change", e => { state.time = e.target.value; render(); });
+$("#weight").addEventListener("change", e => { state.weight = e.target.value; render(); });
+
+// Старые фото коробок больше не используются: удаляем их из памяти браузера
+try { Object.keys(localStorage).filter(k => k.startsWith("cover:")).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+
+render();
+loadStatus();
+</script>
+</body>
+</html>
